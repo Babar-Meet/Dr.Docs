@@ -156,6 +156,9 @@ function HomePage() {
   const [pages, setPages] = useState("all");
   const [isProcessing, setIsProcessing] = useState(false);
   const [status, setStatus] = useState(null);
+  const [showFlashbang, setShowFlashbang] = useState(false);
+  const [flashCountdown, setFlashCountdown] = useState(5);
+  const flashTimerRef = useRef(null);
 
   // theme effect - apply data-theme and persist
   useEffect(() => {
@@ -164,6 +167,43 @@ function HomePage() {
       localStorage.setItem("dr-docs-theme", theme);
     } catch {}
   }, [theme]);
+
+  // flashbang countdown - only for midnight -> white transition, 5 sec, funny, skipable
+  useEffect(() => {
+    if (!showFlashbang) return;
+    if (flashCountdown <= 0) {
+      setTheme("white");
+      setShowFlashbang(false);
+      setFlashCountdown(5);
+      return;
+    }
+    flashTimerRef.current = setTimeout(() => setFlashCountdown((c) => c - 1), 1000);
+    return () => clearTimeout(flashTimerRef.current);
+  }, [showFlashbang, flashCountdown]);
+
+  function handleThemeToggle() {
+    const next = theme === "midnight" ? "white" : "midnight";
+    // only flash when going DARK -> LIGHT, not light -> dark, not on reload
+    if (theme === "midnight" && next === "white") {
+      setFlashCountdown(5);
+      setShowFlashbang(true);
+      return;
+    }
+    setTheme(next);
+  }
+
+  function cancelFlashbang() {
+    clearTimeout(flashTimerRef.current);
+    setShowFlashbang(false);
+    setFlashCountdown(5);
+  }
+
+  function confirmFlashbang() {
+    clearTimeout(flashTimerRef.current);
+    setTheme("white");
+    setShowFlashbang(false);
+    setFlashCountdown(5);
+  }
 
   const currentTool = useMemo(
     () => TOOL_ITEMS.find((item) => item.value === operation) || TOOL_ITEMS[0],
@@ -457,7 +497,7 @@ function HomePage() {
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => setTheme(theme === "midnight" ? "white" : "midnight")}
+              onClick={handleThemeToggle}
               title={theme === "midnight" ? "Switch to Total White" : "Switch to Midnight Orange"}
               aria-label={theme === "midnight" ? "Switch to Total White" : "Switch to Midnight Orange"}
               aria-pressed={theme === "white"}
@@ -905,6 +945,49 @@ function HomePage() {
           </div>
         </footer>
       </main>
+
+      {/* Flashbang meme - only on midnight -> white, 5 sec, funny, skip or cancel, not on reload */}
+      {showFlashbang && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-white px-4">
+          <div className="w-full max-w-[480px] rounded-[8px] border-2 border-black bg-white p-6 text-center shadow-[0_12px_32px_rgba(0,0,0,0.3)]">
+            <p className="font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-black/60">Flashbang Warning</p>
+            <h2 className="mt-2 font-display text-[28px] font-bold leading-none tracking-tight text-black">FLASHBANG INCOMING</h2>
+            <p className="mt-3 font-body text-[14px] font-medium leading-[1.4] text-black/70">
+              You are about to leave the Midnight. White mode is 100% brightness. Your retinas may file a complaint.
+            </p>
+            <p className="mt-2 font-mono text-[12px] text-black/50">Classic meme: protect your eyes. Sunglasses not included.</p>
+
+            <div className="mt-5">
+              <p className="font-display text-[48px] font-bold leading-none text-black">{flashCountdown}</p>
+              <p className="font-mono text-[11px] uppercase tracking-[0.1em] text-black/50">seconds to blindness</p>
+              <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-black/10">
+                <div
+                  className="h-full bg-orange transition-all duration-1000 ease-linear"
+                  style={{ width: `${(flashCountdown / 5) * 100}%` }}
+                />
+              </div>
+            </div>
+
+            <div className="mt-6 grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={cancelFlashbang}
+                className="rounded-[5px] border border-black bg-white px-4 py-3 font-display text-[13px] font-bold text-black hover:bg-black hover:text-white"
+              >
+                Cancel - Keep Me Dark
+              </button>
+              <button
+                type="button"
+                onClick={confirmFlashbang}
+                className="rounded-[5px] bg-orange px-4 py-3 font-display text-[13px] font-bold text-black hover:bg-orangeSoft"
+              >
+                I Am Ready - Flash Me
+              </button>
+            </div>
+            <p className="mt-3 font-mono text-[11px] text-black/40">Auto-flash in {flashCountdown}s. Only shows when switching Dark to Light.</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
