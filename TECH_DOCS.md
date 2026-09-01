@@ -30,7 +30,7 @@ The processing flow is managed by a centralized router (`/utils/processors/route
 
 ###  Frontend (React)
 - **Drag-and-Drop**: Built using native HTML5 drag-and-drop combined with a clean UI.
-- **Vite Proxy**: Configured to proxy API requests from `:5173` to `:5000` for seamless development.
+- **Vite Proxy**: Configured to proxy API requests from `:5173` to `:5000` for development.
 
 ###  Processor Modules
 - **qpdf**: Used for removing PDF restrictions.

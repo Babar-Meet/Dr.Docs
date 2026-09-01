@@ -185,7 +185,7 @@ describe("downloadStore set/get/remove + TTL sweep", () => {
       await fs.writeFile(filePath, "content");
       setDownloadRecord(id, { filePath, downloadName: "sweep.txt", mimeType: "text/plain" });
       const rec = getDownloadRecord(id);
-      rec.createdAt = 0; // very old
+      rec.createdAt = 0; // old
       // Simulate scheduler sweep iteration: iterate over store entries
       // We can't access private downloadStore Map directly, but we can simulate by awaiting remove
       await removeDownloadRecord(id);
