@@ -1,5 +1,5 @@
 export const SECURE_ENCRYPTION_MESSAGE =
-  "❌ This file is securely encrypted and requires the original password.";
+  "This file is securely encrypted and requires the original password.";
 
 export const MAX_UPLOAD_SIZE_BYTES = 50 * 1024 * 1024;
 
@@ -55,4 +55,6 @@ export const OPERATION_MODES = new Set([
   "merge",
   "split",
   "ocr",
+  "rotate",
+  "compress",
 ]);

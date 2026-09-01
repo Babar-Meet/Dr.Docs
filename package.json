@@ -1,5 +1,5 @@
 {
-  "name": "file-unlocker",
+  "name": "dr-docs",
   "private": true,
   "version": "1.0.0",
   "type": "module",
@@ -11,7 +11,9 @@
     "bootstrap": "npm install --workspaces",
     "dev": "concurrently \"npm run dev -w server\" \"npm run dev -w client\"",
     "build": "npm run build -w client",
-    "start": "npm run start -w server"
+    "start": "npm run start -w server",
+    "test": "node --test --test-reporter=tap tests/**/*.test.js",
+    "test:watch": "node --test --watch --test-reporter=tap tests/**/*.test.js"
   },
   "devDependencies": {
     "concurrently": "^9.2.1"

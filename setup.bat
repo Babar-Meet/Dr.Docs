@@ -2,7 +2,7 @@
 SETLOCAL EnableDelayedExpansion
 
 echo ==========================================
-echo FileUnlocker - Environment Setup
+echo Dr.Docs - Environment Setup
 echo ==========================================
 
 :: Check for Node.js

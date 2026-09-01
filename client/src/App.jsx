@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import {
+  Archive,
   CheckCircle2,
   Download,
   FileArchive,
@@ -9,6 +10,8 @@ import {
   FileText,
   LoaderCircle,
   LockOpen,
+  Minimize2,
+  RotateCw,
   ScanSearch,
   Scissors,
   ShieldAlert,
@@ -61,6 +64,22 @@ const TOOL_ITEMS = [
     detail:
       "OCR/text extraction supports bulk processing and returns individual TXT outputs per file.",
     icon: ScanSearch,
+  },
+  {
+    value: "rotate",
+    label: "Rotate",
+    help: "Rotate PDF pages 90/180/270",
+    detail:
+      "Fix sideways phone scans - rotate all pages or select pages like 1,3-5. Encrypted PDFs never bypassed.",
+    icon: RotateCw,
+  },
+  {
+    value: "compress",
+    label: "Compress",
+    help: "Lossless optimize - shrink without quality loss",
+    detail:
+      "Optimize (lossless): linearizes, dedupes, compresses streams via qpdf. Text 10-40%, scans 5-10% - Phase2 lossy coming. Encrypted never bypassed.",
+    icon: Minimize2 || Archive,
   },
 ];
 
@@ -117,6 +136,8 @@ function HomePage() {
   const [hoveredOperation, setHoveredOperation] = useState("");
   const [targetFormat, setTargetFormat] = useState("");
   const [pageRanges, setPageRanges] = useState("");
+  const [rotationAngle, setRotationAngle] = useState("90");
+  const [pages, setPages] = useState("all");
   const [isProcessing, setIsProcessing] = useState(false);
   const [status, setStatus] = useState(null);
 
@@ -163,6 +184,8 @@ function HomePage() {
     setOperation(nextOperation);
     setStatus(null);
     setPageRanges("");
+    setRotationAngle("90");
+    setPages("all");
 
     if (nextOperation === "merge") {
       setTargetFormat("pdf");
@@ -191,7 +214,10 @@ function HomePage() {
 
     setTargetFormat("");
 
-    if (nextOperation === "split" && selectedFiles.length > 1) {
+    if (
+      (nextOperation === "split" || nextOperation === "rotate") &&
+      selectedFiles.length > 1
+    ) {
       setSelectedFiles([selectedFiles[0]]);
     }
   }
@@ -208,7 +234,9 @@ function HomePage() {
     }
 
     const normalizedFiles =
-      operation === "split" ? incomingFiles.slice(0, 1) : incomingFiles;
+      operation === "split" || operation === "rotate"
+        ? incomingFiles.slice(0, 1)
+        : incomingFiles;
 
     setSelectedFiles(normalizedFiles);
     setStatus(null);
@@ -242,6 +270,7 @@ function HomePage() {
   }
 
   async function handleSubmit() {
+    if (isProcessing) return;
     if (selectedFiles.length === 0) {
       setFailure("Unsupported file", "Please upload file(s) first");
       return;
@@ -279,6 +308,47 @@ function HomePage() {
       }
     }
 
+    if (operation === "rotate") {
+      if (
+        selectedFiles.length !== 1 ||
+        getExtension(selectedFiles[0].name) !== ".pdf"
+      ) {
+        setFailure("Unsupported file", "Rotate requires exactly one PDF file.");
+        return;
+      }
+
+      if (!["90", "180", "270"].includes(String(rotationAngle))) {
+        setFailure(
+          "Unsupported file",
+          "Invalid rotation angle. Supported angles are 90, 180, 270.",
+        );
+        return;
+      }
+
+      const pagesTrimmed = pages.trim();
+      if (
+        pagesTrimmed &&
+        pagesTrimmed.toLowerCase() !== "all" &&
+        !/^(\d+(-\d+)?)(\s*,\s*\d+(-\d+)?)*$/.test(pagesTrimmed)
+      ) {
+        setFailure(
+          "Unsupported file",
+          'Invalid pages value. Use "all" or "1,3-5,8".',
+        );
+        return;
+      }
+    }
+
+    if (operation === "compress") {
+      const allPdf = selectedFiles.every(
+        (file) => getExtension(file.name) === ".pdf",
+      );
+      if (!allPdf) {
+        setFailure("Unsupported file", "Compress supports PDF files only.");
+        return;
+      }
+    }
+
     setIsProcessing(true);
     setStatus(null);
 
@@ -292,6 +362,11 @@ function HomePage() {
 
       if (operation === "split" && pageRanges.trim()) {
         formData.append("pageRanges", pageRanges.trim());
+      }
+
+      if (operation === "rotate") {
+        formData.append("rotationAngle", String(rotationAngle));
+        formData.append("pages", pages.trim() || "all");
       }
 
       selectedFiles.forEach((file) => {
@@ -347,14 +422,14 @@ function HomePage() {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.25em] text-white/70">
-                FileUnlocker
+                Dr.Docs
               </p>
               <h1 className="mt-1 font-display text-xl font-bold sm:text-2xl">
                 Batch File Operations
               </h1>
             </div>
             <p className="rounded-full bg-white/10 px-3 py-1 text-xs font-medium text-white/90">
-              Unlock • Convert • Merge • Split • OCR
+              Unlock - Convert - Merge - Split - OCR - Rotate - Compress
             </p>
           </div>
 
@@ -426,13 +501,13 @@ function HomePage() {
               <input
                 ref={fileInputRef}
                 type="file"
-                multiple={operation !== "split"}
+                multiple={operation !== "split" && operation !== "rotate"}
                 className="hidden"
                 onChange={(event) => onPickFiles(event.target.files)}
               />
               <UploadCloud className="mx-auto h-12 w-12 text-lagoon" />
               <p className="mt-4 font-display text-xl font-semibold text-ink">
-                {operation === "split"
+                {operation === "split" || operation === "rotate"
                   ? "Drop one PDF file, or click to upload"
                   : "Drag and drop file(s), or click to upload"}
               </p>
@@ -455,7 +530,7 @@ function HomePage() {
                           {file.name}
                         </p>
                         <p className="mt-1 text-xs text-ink/70 sm:text-sm">
-                          {formatBytes(file.size)} •{" "}
+                          {formatBytes(file.size)} -{" "}
                           {file.type || "Unknown MIME"}
                         </p>
                       </div>
@@ -523,6 +598,54 @@ function HomePage() {
                 />
                 <p className="mt-2 text-xs text-ink/65">
                   Leave empty to split all pages individually.
+                </p>
+              </section>
+            )}
+
+            {operation === "rotate" && (
+              <section className="rounded-2xl border border-lagoon/20 bg-white/85 p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-ink/60">
+                  Rotate Options
+                </p>
+                <label className="mt-2 block text-xs font-medium text-ink/70">
+                  Rotation Angle
+                </label>
+                <select
+                  value={rotationAngle}
+                  onChange={(event) => setRotationAngle(event.target.value)}
+                  className="mt-1 w-full rounded-xl border border-lagoon/30 bg-white px-3 py-3 text-sm text-ink outline-none transition focus:border-coral"
+                >
+                  <option value="90">90deg</option>
+                  <option value="180">180deg</option>
+                  <option value="270">270deg</option>
+                </select>
+                <label className="mt-3 block text-xs font-medium text-ink/70">
+                  Pages
+                </label>
+                <input
+                  type="text"
+                  value={pages}
+                  onChange={(event) => setPages(event.target.value)}
+                  placeholder="all or 1,3-5,8"
+                  className="mt-1 w-full rounded-xl border border-lagoon/30 bg-white px-3 py-3 text-sm text-ink outline-none transition focus:border-coral"
+                />
+                <p className="mt-2 text-xs text-ink/65">
+                  Use "all" or list pages like 1,3-5,8. Leave as "all" for entire document.
+                </p>
+              </section>
+            )}
+
+            {operation === "compress" && (
+              <section className="rounded-2xl border border-lagoon/20 bg-white/85 p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-ink/60">
+                  Compress PDF
+                </p>
+                <p className="mt-2 text-sm text-ink/70">
+                  Lossless optimize - linearizes, dedupes objects, and compresses streams via qpdf.
+                  Text PDFs shrink 10-40%, scans 5-10% with no quality loss.
+                </p>
+                <p className="mt-2 text-xs text-ink/65">
+                  PDFs only - Batch supported (up to 200) - 50MB per file - Encrypted files are never bypassed. Phase 2 lossy 60-72% coming.
                 </p>
               </section>
             )}

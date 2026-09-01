@@ -16,9 +16,13 @@ import { unlockXlsxSheetProtection } from "./excelProcessor.js";
 import { convertImageToFormat, convertImageToPdf } from "./imageProcessor.js";
 import { normalizeZip } from "./zipProcessor.js";
 import { convertWithLibreOffice } from "./conversionProcessor.js";
-import { unlockPdfRestrictions } from "./pdfProcessor.js";
+import {
+  compressPdf,
+  unlockPdfRestrictions,
+} from "./pdfProcessor.js";
 import { mergePdfFiles, splitPdfByRanges } from "./mergeSplitProcessor.js";
 import { runOcrExtraction } from "./ocrProcessor.js";
+import { rotatePdfPages } from "./rotateProcessor.js";
 
 function unsupportedFile(
   reason = "This operation is not available for this file type",
@@ -222,6 +226,8 @@ export async function processFile({
   operation,
   targetFormat,
   pageRanges,
+  rotationAngle,
+  pages,
   inputFiles = [],
   outputBasePath,
   workDir,
@@ -304,6 +310,80 @@ export async function processFile({
 
     return {
       message: `Split completed with ${outputs.length} output file(s).`,
+      outputs,
+    };
+  }
+
+  if (normalizedOperation === "rotate") {
+    if (files.length !== 1) {
+      throw unsupportedFile("Rotate requires exactly one PDF file.");
+    }
+
+    const file = files[0];
+    const fileType = detectFileType(file.originalName, file.mimeType);
+    if (!fileType || fileType.extension !== ".pdf") {
+      throw unsupportedFile("Rotate supports PDF files only.");
+    }
+
+    const perFileBase = createPerFileOutputBase(outputBasePath, 0, file.originalName);
+    const outputPath = createOutputPath(perFileBase, ".pdf");
+    await rotatePdfPages({
+      inputPath: file.path,
+      outputPath,
+      rotationAngle,
+      pages,
+    });
+    await ensureOutputExists(outputPath);
+
+    return {
+      message: "PDF rotated successfully.",
+      outputs: [
+        createDescriptor({
+          outputPath,
+          outputExtension: ".pdf",
+          sourceName: file.originalName,
+          outputName: `${sanitizeBaseName(path.parse(file.originalName).name)}_rotated.pdf`,
+          detectedType: "PDF",
+          message: "PDF rotated successfully.",
+        }),
+      ],
+    };
+  }
+
+  if (normalizedOperation === "compress") {
+    const outputs = [];
+    for (let index = 0; index < files.length; index += 1) {
+      const file = files[index];
+      const fileType = detectFileType(file.originalName, file.mimeType);
+      if (!fileType || fileType.extension !== ".pdf") {
+        throw unsupportedFile("Compress supports PDF files only.");
+      }
+      const perFileBase = createPerFileOutputBase(
+        outputBasePath,
+        index,
+        file.originalName,
+      );
+      const outputPath = createOutputPath(perFileBase, ".pdf");
+      await compressPdf({
+        inputPath: file.path,
+        outputPath,
+        qpdfBin,
+      });
+      await ensureOutputExists(outputPath);
+      const base = sanitizeBaseName(path.parse(file.originalName).name);
+      outputs.push(
+        createDescriptor({
+          outputPath,
+          outputExtension: ".pdf",
+          sourceName: file.originalName,
+          outputName: `${base}_compressed.pdf`,
+          detectedType: "PDF",
+          message: "PDF optimized (lossless) successfully.",
+        }),
+      );
+    }
+    return {
+      message: `Compressed ${outputs.length} PDF(s) (lossless optimize).`,
       outputs,
     };
   }

@@ -3,7 +3,11 @@ client/node_modules/
 server/node_modules/
 client/dist/
 server/tmp/
+Temp/
+Docs/
 .DS_Store
 Thumbs.db
 .env
 *.log
+eng.traineddata
+server/eng.traineddata

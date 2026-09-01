@@ -23,7 +23,7 @@ app.use(express.urlencoded({ extended: true }));
 app.get("/health", (_req, res) => {
   res.status(200).json({
     status: "ok",
-    service: "file-unlocker",
+    service: "dr-docs",
   });
 });
 
@@ -50,7 +50,7 @@ if (hasClientBuild) {
   app.get("/", (_req, res) => {
     res.status(200).json({
       status: "ok",
-      service: "file-unlocker",
+      service: "dr-docs",
       message:
         "Frontend build not found. In development, open http://localhost:5173. For production, run npm run build -w client first.",
     });
@@ -64,5 +64,5 @@ await ensureRuntimeDirectories();
 startDownloadCleanupScheduler();
 
 app.listen(PORT, () => {
-  console.log(`FileUnlocker API listening on port ${PORT}`);
+  console.log(`Dr.Docs API listening on port ${PORT}`);
 });
