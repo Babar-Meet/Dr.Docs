@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import {
   Archive,
@@ -11,11 +11,14 @@ import {
   LoaderCircle,
   LockOpen,
   Minimize2,
+  Moon,
   RotateCw,
   ScanSearch,
   Scissors,
   ShieldAlert,
+  Smartphone,
   Split,
+  Sun,
   UploadCloud,
   WandSparkles,
   XCircle,
@@ -23,6 +26,20 @@ import {
 
 const API_BASE = (import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
 const MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024;
+
+const THEMES = [
+  { value: "midnight", label: "Midnight", icon: Moon, title: "Midnight Orange - dark, high contrast" },
+  { value: "white", label: "White", icon: Sun, title: "Total White - light, clean" },
+  { value: "amoled", label: "AMOLED", icon: Smartphone, title: "AMOLED Dark - pure black, battery friendly" },
+];
+
+function getInitialTheme() {
+  try {
+    const saved = localStorage.getItem("dr-docs-theme");
+    if (saved && THEMES.some((t) => t.value === saved)) return saved;
+  } catch {}
+  return "midnight";
+}
 
 const TOOL_ITEMS = [
   {
@@ -117,15 +134,15 @@ function buildEndpoint(pathname) {
 
 function FileTypeIcon({ extension }) {
   if ([".jpg", ".jpeg", ".png"].includes(extension)) {
-    return <FileImage className="h-8 w-8 text-lagoon" />;
+    return <FileImage className="h-8 w-8 text-muted" />;
   }
   if (extension === ".xlsx") {
-    return <FileSpreadsheet className="h-8 w-8 text-lagoon" />;
+    return <FileSpreadsheet className="h-8 w-8 text-muted" />;
   }
   if (extension === ".zip") {
-    return <FileArchive className="h-8 w-8 text-lagoon" />;
+    return <FileArchive className="h-8 w-8 text-muted" />;
   }
-  return <FileText className="h-8 w-8 text-lagoon" />;
+  return <FileText className="h-8 w-8 text-muted" />;
 }
 
 function HomePage() {
@@ -133,6 +150,7 @@ function HomePage() {
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [dragActive, setDragActive] = useState(false);
   const [operation, setOperation] = useState("unlock");
+  const [theme, setTheme] = useState(() => getInitialTheme());
   const [hoveredOperation, setHoveredOperation] = useState("");
   const [targetFormat, setTargetFormat] = useState("");
   const [pageRanges, setPageRanges] = useState("");
@@ -140,6 +158,14 @@ function HomePage() {
   const [pages, setPages] = useState("all");
   const [isProcessing, setIsProcessing] = useState(false);
   const [status, setStatus] = useState(null);
+
+  // theme effect - apply data-theme and persist
+  useEffect(() => {
+    try {
+      document.documentElement.setAttribute("data-theme", theme);
+      localStorage.setItem("dr-docs-theme", theme);
+    } catch {}
+  }, [theme]);
 
   const currentTool = useMemo(
     () => TOOL_ITEMS.find((item) => item.value === operation) || TOOL_ITEMS[0],
@@ -413,32 +439,64 @@ function HomePage() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-      <div className="relative w-full overflow-hidden rounded-3xl border border-white/60 bg-white/75 shadow-panel backdrop-blur-lg">
-        <div className="pointer-events-none absolute -left-16 -top-20 h-72 w-72 rounded-full bg-lagoon/15 blur-3xl" />
-        <div className="pointer-events-none absolute -right-20 -top-20 h-72 w-72 rounded-full bg-coral/20 blur-3xl" />
-
-        <header className="relative z-10 border-b border-lagoon/15 bg-gradient-to-r from-tide via-tide to-lagoon px-4 py-4 text-white sm:px-6">
-          <div className="flex flex-wrap items-center justify-between gap-3">
+    <div className="min-h-screen bg-ink text-white">
+      {/* Top Navigation - Midnight Orange spec: Ink Black #0B0B0B, 56-64px, border #333333 */}
+      <header className="sticky top-0 z-30 border-b border-borderDark bg-ink">
+        <div className="mx-auto flex h-[60px] max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center gap-3">
+            <div className="flex h-8 w-8 items-center justify-center rounded-[5px] bg-orange text-sm font-bold text-black">
+              D
+            </div>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.25em] text-white/70">
+              <p className="font-display text-[15px] font-bold leading-none tracking-tight text-white">
                 Dr.Docs
               </p>
-              <h1 className="mt-1 font-display text-xl font-bold sm:text-2xl">
-                Batch File Operations
-              </h1>
+              <p className="font-mono text-[11px] font-normal leading-none text-muted">
+                {theme === "white" ? "TOTAL WHITE" : theme === "amoled" ? "AMOLED DARK" : "MIDNIGHT ORANGE"}
+              </p>
             </div>
-            <p className="rounded-full bg-white/10 px-3 py-1 text-xs font-medium text-white/90">
+            <span className="ml-2 hidden rounded-full border border-borderDark bg-panel px-2.5 py-1 font-mono text-[11px] font-medium text-muted sm:inline-flex">
+              Batch File Operations
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <p className="hidden rounded-full border border-borderDark bg-deep px-3 py-1 font-mono text-[11px] text-muted lg:inline-flex">
               Unlock - Convert - Merge - Split - OCR - Rotate - Compress
             </p>
+            <div className="flex items-center rounded-full border border-borderDark bg-panel p-1">
+              {THEMES.map((t) => {
+                const Icon = t.icon;
+                const isActive = theme === t.value;
+                return (
+                  <button
+                    key={t.value}
+                    type="button"
+                    onClick={() => setTheme(t.value)}
+                    title={t.title}
+                    aria-label={t.title}
+                    aria-pressed={isActive}
+                    className={
+                      "inline-flex h-7 w-7 items-center justify-center rounded-full transition " +
+                      (isActive
+                        ? "bg-orange text-black"
+                        : "text-muted hover:bg-elevated hover:text-white")
+                    }
+                  >
+                    <Icon className="h-3.5 w-3.5" />
+                  </button>
+                );
+              })}
+            </div>
           </div>
+        </div>
 
-          <div className="mt-4 overflow-x-auto pb-1">
-            <nav className="flex min-w-max items-center gap-2">
+        {/* Tool Navigation - tabs style */}
+        <div className="border-t border-borderDark bg-ink">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <nav className="flex items-center gap-1 overflow-x-auto py-2 scrollbar-thin">
               {TOOL_ITEMS.map((item) => {
                 const Icon = item.icon;
                 const isActive = operation === item.value;
-
                 return (
                   <button
                     key={item.value}
@@ -449,10 +507,10 @@ function HomePage() {
                     onFocus={() => setHoveredOperation(item.value)}
                     onBlur={() => setHoveredOperation("")}
                     className={
-                      "inline-flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-semibold transition " +
+                      "inline-flex shrink-0 items-center gap-2 border-b-2 px-3 py-2.5 text-[13px] font-bold leading-none transition " +
                       (isActive
-                        ? "border-white bg-white text-tide"
-                        : "border-white/30 bg-white/10 text-white hover:border-white/70 hover:bg-white/20")
+                        ? "border-orange bg-panel text-orange"
+                        : "border-transparent text-muted hover:bg-panel hover:text-white")
                     }
                     title={item.help}
                   >
@@ -463,26 +521,44 @@ function HomePage() {
               })}
             </nav>
           </div>
-        </header>
+        </div>
+      </header>
 
-        <section className="relative z-10 grid gap-4 p-4 sm:p-6 lg:grid-cols-[1.1fr_0.9fr]">
+      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+        <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
+          {/* Left Column */}
           <div className="space-y-4">
-            <div className="rounded-2xl border border-lagoon/20 bg-white/85 p-4">
-              <h2 className="font-display text-lg font-bold text-ink sm:text-xl">
-                {currentTool.label}
-              </h2>
-              <p className="mt-1 text-sm text-ink/70">{currentTool.help}</p>
+            {/* Tool header card */}
+            <section className="rounded-[6px] border border-borderDark bg-panel p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h1 className="font-display text-[20px] font-bold leading-tight text-white">
+                    {currentTool.label}
+                  </h1>
+                  <p className="mt-1 font-body text-[13px] font-medium leading-normal text-offWhite">
+                    {currentTool.help}
+                  </p>
+                </div>
+                <span className="shrink-0 rounded-full border border-orange/30 bg-orange/10 px-2.5 py-1 font-mono text-[11px] font-semibold text-orange">
+                  {TOOL_ITEMS.findIndex((t) => t.value === operation) + 1} / {TOOL_ITEMS.length}
+                </span>
+              </div>
 
-              <div className="mt-3 rounded-xl border border-lagoon/15 bg-foam/40 p-3 text-sm text-ink/80">
-                <p className="font-semibold text-ink">Tool details</p>
-                <p className="mt-1">{activeHoverTool.detail}</p>
-                <p className="mt-2 text-xs text-ink/65">
-                  Security boundary: strong password encryption and DRM are
-                  never bypassed.
+              <div className="mt-4 rounded-[5px] border border-borderDark bg-deep p-3">
+                <p className="font-display text-[12px] font-semibold uppercase tracking-[0.08em] text-muted">
+                  Tool details
+                </p>
+                <p className="mt-2 font-body text-[13px] leading-[1.5] text-offWhite">
+                  {activeHoverTool.detail}
+                </p>
+                <p className="mt-3 flex items-center gap-2 font-mono text-[11px] leading-none text-muted">
+                  <ShieldAlert className="h-3.5 w-3.5 shrink-0 text-muted" />
+                  Security boundary: strong encryption never bypassed.
                 </p>
               </div>
-            </div>
+            </section>
 
+            {/* Drop zone - Midnight Orange inputs spec */}
             <section
               onDragOver={(event) => {
                 event.preventDefault();
@@ -492,10 +568,10 @@ function HomePage() {
               onDrop={onDrop}
               onClick={() => fileInputRef.current?.click()}
               className={
-                "cursor-pointer rounded-2xl border-2 border-dashed p-8 text-center transition-all " +
+                "cursor-pointer rounded-[6px] border-2 border-dashed p-8 text-center transition " +
                 (dragActive
-                  ? "border-coral bg-coral/10"
-                  : "border-lagoon/45 bg-white hover:border-lagoon hover:bg-foam/40")
+                  ? "border-orange bg-elevated"
+                  : "border-borderStrong bg-deep hover:border-[#666666] hover:bg-panel")
               }
             >
               <input
@@ -505,35 +581,59 @@ function HomePage() {
                 className="hidden"
                 onChange={(event) => onPickFiles(event.target.files)}
               />
-              <UploadCloud className="mx-auto h-12 w-12 text-lagoon" />
-              <p className="mt-4 font-display text-xl font-semibold text-ink">
+              <UploadCloud
+                className={"mx-auto h-10 w-10 " + (dragActive ? "text-orange" : "text-muted")}
+              />
+              <p className="mx-auto mt-4 max-w-[28ch] font-display text-[15px] font-bold leading-tight text-white">
                 {operation === "split" || operation === "rotate"
                   ? "Drop one PDF file, or click to upload"
                   : "Drag and drop file(s), or click to upload"}
               </p>
-              <p className="mt-2 text-sm text-ink/65">
+              <p className="mt-2 font-body text-[13px] text-muted">
                 Supported: PDF, DOCX, PPTX, XLSX, JPG, PNG, ZIP (max 50MB each)
+              </p>
+              <p className="mt-3 inline-flex items-center gap-2 rounded-full border border-borderDark bg-panel px-3 py-1 font-mono text-[11px] text-muted">
+                Click to browse - Batch up to 200 files
               </p>
             </section>
 
+            {/* Selected files */}
             {selectedFiles.length > 0 && (
-              <section className="rounded-2xl border border-lagoon/20 bg-white/80 p-4">
-                <div className="space-y-3">
+              <section className="rounded-[6px] border border-borderDark bg-panel p-4">
+                <div className="mb-3 flex items-center justify-between">
+                  <p className="font-display text-[12px] font-semibold uppercase tracking-[0.08em] text-muted">
+                    Selected files - {selectedFiles.length}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedFiles([]);
+                      setStatus(null);
+                    }}
+                    className="rounded-[5px] border border-borderStrong bg-deep px-2.5 py-1 font-body text-xs font-semibold text-offWhite hover:bg-elevated hover:text-white"
+                  >
+                    Clear
+                  </button>
+                </div>
+                <div className="space-y-0 divide-y divide-borderDark">
                   {selectedFiles.map((file) => (
                     <div
                       key={`${file.name}-${file.size}`}
-                      className="flex items-start gap-3"
+                      className="flex items-start gap-3 py-3 first:pt-0 last:pb-0"
                     >
                       <FileTypeIcon extension={getExtension(file.name)} />
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-semibold text-ink sm:text-base">
+                        <p className="truncate font-body text-[13px] font-semibold leading-tight text-white">
                           {file.name}
                         </p>
-                        <p className="mt-1 text-xs text-ink/70 sm:text-sm">
-                          {formatBytes(file.size)} -{" "}
-                          {file.type || "Unknown MIME"}
+                        <p className="mt-1 font-mono text-[11px] leading-none text-muted">
+                          {formatBytes(file.size)} - {file.type || "Unknown MIME"}
                         </p>
                       </div>
+                      <span className="shrink-0 rounded-full bg-deep px-2 py-1 font-mono text-[11px] text-muted">
+                        {getExtension(file.name).replace(".", "").toUpperCase() || "FILE"}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -541,20 +641,21 @@ function HomePage() {
             )}
           </div>
 
+          {/* Right Column - Controls */}
           <aside className="space-y-4">
             {operation === "convert" && (
-              <section className="rounded-2xl border border-lagoon/20 bg-white/85 p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-ink/60">
+              <section className="rounded-[6px] border border-borderDark bg-panel p-4">
+                <p className="font-display text-[12px] font-semibold uppercase tracking-[0.08em] text-muted">
                   Convert Target
                 </p>
                 <select
                   value={targetFormat}
                   onChange={(event) => setTargetFormat(event.target.value)}
                   disabled={convertTargetOptions.length === 0}
-                  className="mt-2 w-full rounded-xl border border-lagoon/30 bg-white px-3 py-3 text-sm text-ink outline-none transition focus:border-coral disabled:cursor-not-allowed disabled:opacity-60"
+                  className="mt-3 w-full rounded-[5px] border border-borderStrong bg-deep px-3 py-2.5 font-body text-[14px] text-white outline-none transition placeholder:text-[#777777] hover:border-[#666666] focus:border-orange focus:ring-2 focus:ring-orange/20 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {convertTargetOptions.length === 0 && (
-                    <option value="">Not available</option>
+                    <option value="">Not available - select supported files</option>
                   )}
                   {convertTargetOptions.map((target) => (
                     <option key={target} value={target}>
@@ -562,18 +663,23 @@ function HomePage() {
                     </option>
                   ))}
                 </select>
+                {convertTargetOptions.length === 0 && (
+                  <p className="mt-2 font-body text-xs text-muted">
+                    No common target for current files. Add compatible files.
+                  </p>
+                )}
               </section>
             )}
 
             {operation === "merge" && (
-              <section className="rounded-2xl border border-lagoon/20 bg-white/85 p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-ink/60">
+              <section className="rounded-[6px] border border-borderDark bg-panel p-4">
+                <p className="font-display text-[12px] font-semibold uppercase tracking-[0.08em] text-muted">
                   Merge Output Format
                 </p>
                 <select
                   value={targetFormat}
                   onChange={(event) => setTargetFormat(event.target.value)}
-                  className="mt-2 w-full rounded-xl border border-lagoon/30 bg-white px-3 py-3 text-sm text-ink outline-none transition focus:border-coral"
+                  className="mt-3 w-full rounded-[5px] border border-borderStrong bg-deep px-3 py-2.5 font-body text-[14px] text-white outline-none transition hover:border-[#666666] focus:border-orange focus:ring-2 focus:ring-orange/20"
                 >
                   {MERGE_TARGETS.map((target) => (
                     <option key={target} value={target}>
@@ -581,12 +687,15 @@ function HomePage() {
                     </option>
                   ))}
                 </select>
+                <p className="mt-2 font-body text-xs text-muted">
+                  Mixed files merge into one PDF or DOCX.
+                </p>
               </section>
             )}
 
             {operation === "split" && (
-              <section className="rounded-2xl border border-lagoon/20 bg-white/85 p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-ink/60">
+              <section className="rounded-[6px] border border-borderDark bg-panel p-4">
+                <p className="font-display text-[12px] font-semibold uppercase tracking-[0.08em] text-muted">
                   Split Page Ranges
                 </p>
                 <input
@@ -594,32 +703,32 @@ function HomePage() {
                   value={pageRanges}
                   onChange={(event) => setPageRanges(event.target.value)}
                   placeholder="Example: 1-3,5,7-10"
-                  className="mt-2 w-full rounded-xl border border-lagoon/30 bg-white px-3 py-3 text-sm text-ink outline-none transition focus:border-coral"
+                  className="mt-3 w-full rounded-[5px] border border-borderStrong bg-deep px-3 py-2.5 font-body text-[14px] text-white outline-none transition placeholder:text-[#777777] hover:border-[#666666] focus:border-orange focus:ring-2 focus:ring-orange/20"
                 />
-                <p className="mt-2 text-xs text-ink/65">
+                <p className="mt-2 font-body text-xs text-muted">
                   Leave empty to split all pages individually.
                 </p>
               </section>
             )}
 
             {operation === "rotate" && (
-              <section className="rounded-2xl border border-lagoon/20 bg-white/85 p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-ink/60">
+              <section className="rounded-[6px] border border-borderDark bg-panel p-4">
+                <p className="font-display text-[12px] font-semibold uppercase tracking-[0.08em] text-muted">
                   Rotate Options
                 </p>
-                <label className="mt-2 block text-xs font-medium text-ink/70">
+                <label className="mt-3 block font-display text-[11px] font-semibold uppercase tracking-[0.06em] text-muted">
                   Rotation Angle
                 </label>
                 <select
                   value={rotationAngle}
                   onChange={(event) => setRotationAngle(event.target.value)}
-                  className="mt-1 w-full rounded-xl border border-lagoon/30 bg-white px-3 py-3 text-sm text-ink outline-none transition focus:border-coral"
+                  className="mt-1.5 w-full rounded-[5px] border border-borderStrong bg-deep px-3 py-2.5 font-body text-[14px] text-white outline-none transition hover:border-[#666666] focus:border-orange focus:ring-2 focus:ring-orange/20"
                 >
-                  <option value="90">90deg</option>
-                  <option value="180">180deg</option>
-                  <option value="270">270deg</option>
+                  <option value="90">90deg - Quarter turn</option>
+                  <option value="180">180deg - Half turn</option>
+                  <option value="270">270deg - Three quarter</option>
                 </select>
-                <label className="mt-3 block text-xs font-medium text-ink/70">
+                <label className="mt-3 block font-display text-[11px] font-semibold uppercase tracking-[0.06em] text-muted">
                   Pages
                 </label>
                 <input
@@ -627,43 +736,73 @@ function HomePage() {
                   value={pages}
                   onChange={(event) => setPages(event.target.value)}
                   placeholder="all or 1,3-5,8"
-                  className="mt-1 w-full rounded-xl border border-lagoon/30 bg-white px-3 py-3 text-sm text-ink outline-none transition focus:border-coral"
+                  className="mt-1.5 w-full rounded-[5px] border border-borderStrong bg-deep px-3 py-2.5 font-body text-[14px] text-white outline-none transition placeholder:text-[#777777] hover:border-[#666666] focus:border-orange focus:ring-2 focus:ring-orange/20"
                 />
-                <p className="mt-2 text-xs text-ink/65">
-                  Use "all" or list pages like 1,3-5,8. Leave as "all" for entire document.
+                <p className="mt-2 font-body text-xs text-muted">
+                  Use "all" or list pages like 1,3-5,8.
                 </p>
               </section>
             )}
 
             {operation === "compress" && (
-              <section className="rounded-2xl border border-lagoon/20 bg-white/85 p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-ink/60">
+              <section className="rounded-[6px] border border-borderDark bg-panel p-4">
+                <p className="font-display text-[12px] font-semibold uppercase tracking-[0.08em] text-muted">
                   Compress PDF
                 </p>
-                <p className="mt-2 text-sm text-ink/70">
+                <p className="mt-3 font-body text-[13px] leading-[1.5] text-offWhite">
                   Lossless optimize - linearizes, dedupes objects, and compresses streams via qpdf.
                   Text PDFs shrink 10-40%, scans 5-10% with no quality loss.
                 </p>
-                <p className="mt-2 text-xs text-ink/65">
-                  PDFs only - Batch supported (up to 200) - 50MB per file - Encrypted files are never bypassed. Phase 2 lossy 60-72% coming.
+                <div className="mt-3 rounded-[5px] border border-borderDark bg-deep p-3">
+                  <p className="font-mono text-[11px] leading-[1.4] text-muted">
+                    PDFs only - Batch supported (up to 200) - 50MB per file - Encrypted files are never
+                    bypassed. Phase 2 lossy 60-72% coming.
+                  </p>
+                </div>
+              </section>
+            )}
+
+            {operation === "unlock" && (
+              <section className="rounded-[6px] border border-borderDark bg-panel p-4">
+                <p className="font-display text-[12px] font-semibold uppercase tracking-[0.08em] text-muted">
+                  Unlock
+                </p>
+                <p className="mt-2 font-body text-[13px] leading-[1.5] text-offWhite">
+                  Removes edit and copy restrictions only. Password-protected and strongly encrypted files
+                  are never bypassed.
                 </p>
               </section>
             )}
 
+            {operation === "ocr" && (
+              <section className="rounded-[6px] border border-borderDark bg-panel p-4">
+                <p className="font-display text-[12px] font-semibold uppercase tracking-[0.08em] text-muted">
+                  OCR - Text Extraction
+                </p>
+                <p className="mt-2 font-body text-[13px] leading-[1.5] text-offWhite">
+                  Extracts text from PDFs and images. Batch supported - returns one TXT per file.
+                </p>
+                <p className="mt-2 font-mono text-[11px] text-muted">
+                  Uses Tesseract - English trained data included (eng.traineddata).
+                </p>
+              </section>
+            )}
+
+            {/* Primary CTA - Orange #FF9900 */}
             <button
               type="button"
               onClick={handleSubmit}
               disabled={selectedFiles.length === 0 || isProcessing}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-tide px-5 py-3 text-sm font-semibold text-white transition hover:bg-tide/90 disabled:cursor-not-allowed disabled:bg-tide/50"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-[5px] bg-orange px-5 py-3 font-display text-[13px] font-bold leading-none text-black transition hover:bg-orangeSoft active:bg-orangeDark disabled:cursor-not-allowed disabled:border disabled:border-borderDark disabled:bg-elevated disabled:text-muted"
             >
               {isProcessing ? (
                 <>
-                  <LoaderCircle className="h-5 w-5 animate-spin" />
+                  <LoaderCircle className="h-4 w-4 animate-spin" />
                   Processing...
                 </>
               ) : (
                 <>
-                  <WandSparkles className="h-5 w-5" />
+                  <WandSparkles className="h-4 w-4" />
                   Process Files
                 </>
               )}
@@ -672,24 +811,36 @@ function HomePage() {
             {status && (
               <section
                 className={
-                  "rounded-2xl border p-4 " +
+                  "rounded-[6px] border p-4 " +
                   (status.kind === "success"
-                    ? "border-emerald-300 bg-emerald-50"
-                    : "border-rose-300 bg-rose-50")
+                    ? "border-success bg-successBg"
+                    : "border-error bg-errorBg")
                 }
               >
                 <div className="flex items-start gap-3">
                   {status.kind === "success" ? (
-                    <CheckCircle2 className="mt-0.5 h-5 w-5 text-emerald-600" />
+                    <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-success" />
                   ) : (
-                    <XCircle className="mt-0.5 h-5 w-5 text-rose-600" />
+                    <XCircle className="mt-0.5 h-5 w-5 shrink-0 text-error" />
                   )}
-                  <div className="space-y-1">
-                    <p className="text-sm font-semibold text-ink">
+                  <div className="min-w-0 space-y-1">
+                    <p
+                      className={
+                        "font-display text-[13px] font-bold leading-tight " +
+                        (status.kind === "success" ? "text-successText" : "text-errorText")
+                      }
+                    >
                       {status.message}
                     </p>
                     {status.reason && (
-                      <p className="text-sm text-ink/70">{status.reason}</p>
+                      <p
+                        className={
+                          "font-body text-[13px] leading-normal " +
+                          (status.kind === "success" ? "text-successText/80" : "text-errorText/80")
+                        }
+                      >
+                        {status.reason}
+                      </p>
                     )}
                   </div>
                 </div>
@@ -698,7 +849,7 @@ function HomePage() {
                   <a
                     href={status.batchDownloadUrl}
                     download
-                    className="mt-4 inline-flex items-center gap-2 rounded-lg bg-tide px-4 py-2 text-sm font-semibold text-white transition hover:bg-tide/90"
+                    className="mt-4 inline-flex items-center gap-2 rounded-[5px] bg-orange px-4 py-2 font-display text-[13px] font-bold text-black transition hover:bg-orangeSoft"
                   >
                     <Download className="h-4 w-4" />
                     Download All
@@ -706,24 +857,24 @@ function HomePage() {
                 )}
 
                 {status.kind === "success" && status.results?.length > 0 && (
-                  <div className="mt-3 space-y-2">
+                  <div className="mt-4 space-y-2">
                     {status.results.map((item) => (
                       <div
                         key={item.downloadId}
-                        className="flex items-center justify-between rounded-lg border border-emerald-200 bg-white/70 px-3 py-2"
+                        className="flex items-center justify-between gap-3 rounded-[5px] border border-success/30 bg-ink/40 px-3 py-2.5"
                       >
                         <div className="min-w-0">
-                          <p className="truncate text-xs font-semibold text-ink">
+                          <p className="truncate font-body text-xs font-semibold text-white">
                             {item.downloadName}
                           </p>
-                          <p className="text-[11px] text-ink/65">
+                          <p className="truncate font-mono text-[11px] text-successText/70">
                             {item.message}
                           </p>
                         </div>
                         <a
                           href={buildEndpoint(item.downloadUrl)}
                           download={item.downloadName}
-                          className="ml-3 inline-flex items-center gap-1 rounded-md bg-emerald-600 px-2 py-1 text-xs font-semibold text-white hover:bg-emerald-500"
+                          className="ml-2 inline-flex shrink-0 items-center gap-1 rounded-[5px] bg-success px-2.5 py-1.5 font-display text-xs font-bold text-black hover:bg-[#1a9c4a]"
                         >
                           <Download className="h-3 w-3" />
                           Download
@@ -735,17 +886,48 @@ function HomePage() {
               </section>
             )}
 
-            <section className="rounded-2xl border border-amber-300/60 bg-amber-50/80 p-4 text-sm text-ink/80">
-              <p className="flex items-start gap-2 font-medium">
-                <ShieldAlert className="mt-0.5 h-4 w-4 text-amber-600" />
-                Security policy: strong encryption, password protection, and DRM
-                are never bypassed.
+            <section className="rounded-[6px] border border-warning/30 bg-warningBg p-3">
+              <p className="flex items-start gap-2 font-body text-[13px] font-medium leading-[1.4] text-warningText">
+                <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
+                Security policy: strong encryption, password protection, and DRM are never bypassed.
               </p>
             </section>
+
+            <section className="rounded-[6px] border border-borderDark bg-panel p-3">
+              <p className="font-mono text-[11px] font-medium uppercase tracking-[0.08em] text-muted">
+                Limits
+              </p>
+              <div className="mt-2 grid grid-cols-3 gap-2">
+                <div className="rounded-[5px] bg-deep px-2 py-2 text-center">
+                  <p className="font-display text-sm font-bold text-orange">50 MB</p>
+                  <p className="font-mono text-[11px] text-muted">per file</p>
+                </div>
+                <div className="rounded-[5px] bg-deep px-2 py-2 text-center">
+                  <p className="font-display text-sm font-bold text-white">200</p>
+                  <p className="font-mono text-[11px] text-muted">max files</p>
+                </div>
+                <div className="rounded-[5px] bg-deep px-2 py-2 text-center">
+                  <p className="font-display text-sm font-bold text-white">2</p>
+                  <p className="font-mono text-[11px] text-muted">concurrent</p>
+                </div>
+              </div>
+            </section>
           </aside>
-        </section>
-      </div>
-    </main>
+        </div>
+
+        <footer className="mt-8 border-t border-borderDark pt-4">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <p className="font-mono text-[11px] text-muted">
+              Dr.Docs - Midnight Orange - Black structure + white content + gray hierarchy + orange
+              action
+            </p>
+            <p className="font-mono text-[11px] text-muted">
+              DESIGN.md / THEME.md is the single source of truth
+            </p>
+          </div>
+        </footer>
+      </main>
+    </div>
   );
 }
 
