@@ -455,14 +455,8 @@ function HomePage() {
                 {theme === "white" ? "TOTAL WHITE" : theme === "amoled" ? "AMOLED DARK" : "MIDNIGHT ORANGE"}
               </p>
             </div>
-            <span className="ml-2 hidden rounded-full border border-borderDark bg-panel px-2.5 py-1 font-mono text-[11px] font-medium text-muted sm:inline-flex">
-              Batch File Operations
-            </span>
           </div>
           <div className="flex items-center gap-2">
-            <p className="hidden rounded-full border border-borderDark bg-deep px-3 py-1 font-mono text-[11px] text-muted lg:inline-flex">
-              Unlock - Convert - Merge - Split - OCR - Rotate - Compress
-            </p>
             <div className="flex items-center rounded-full border border-borderDark bg-panel p-1">
               {THEMES.map((t) => {
                 const Icon = t.icon;
