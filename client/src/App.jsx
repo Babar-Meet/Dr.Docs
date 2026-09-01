@@ -16,7 +16,6 @@ import {
   ScanSearch,
   Scissors,
   ShieldAlert,
-  Smartphone,
   Split,
   Sun,
   UploadCloud,
@@ -28,9 +27,8 @@ const API_BASE = (import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
 const MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024;
 
 const THEMES = [
-  { value: "midnight", label: "Midnight", icon: Moon, title: "Midnight Orange - dark, high contrast" },
+  { value: "midnight", label: "Midnight", icon: Moon, title: "Midnight Orange - signature dark, orange action" },
   { value: "white", label: "White", icon: Sun, title: "Total White - light, clean" },
-  { value: "amoled", label: "AMOLED", icon: Smartphone, title: "AMOLED Dark - pure black, battery friendly" },
 ];
 
 function getInitialTheme() {
@@ -452,35 +450,21 @@ function HomePage() {
                 Dr.Docs
               </p>
               <p className="font-mono text-[11px] font-normal leading-none text-muted">
-                {theme === "white" ? "TOTAL WHITE" : theme === "amoled" ? "AMOLED DARK" : "MIDNIGHT ORANGE"}
+                {theme === "white" ? "TOTAL WHITE" : "MIDNIGHT ORANGE"}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <div className="flex items-center rounded-full border border-borderDark bg-panel p-1">
-              {THEMES.map((t) => {
-                const Icon = t.icon;
-                const isActive = theme === t.value;
-                return (
-                  <button
-                    key={t.value}
-                    type="button"
-                    onClick={() => setTheme(t.value)}
-                    title={t.title}
-                    aria-label={t.title}
-                    aria-pressed={isActive}
-                    className={
-                      "inline-flex h-7 w-7 items-center justify-center rounded-full transition " +
-                      (isActive
-                        ? "bg-orange text-black"
-                        : "text-muted hover:bg-elevated hover:text-white")
-                    }
-                  >
-                    <Icon className="h-3.5 w-3.5" />
-                  </button>
-                );
-              })}
-            </div>
+            <button
+              type="button"
+              onClick={() => setTheme(theme === "midnight" ? "white" : "midnight")}
+              title={theme === "midnight" ? "Switch to Total White" : "Switch to Midnight Orange"}
+              aria-label={theme === "midnight" ? "Switch to Total White" : "Switch to Midnight Orange"}
+              aria-pressed={theme === "white"}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-borderDark bg-panel text-muted transition hover:bg-elevated hover:text-white"
+            >
+              {theme === "midnight" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </button>
           </div>
         </div>
 

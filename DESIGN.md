@@ -745,15 +745,14 @@ Mobile layouts should collapse into 1-2 columns.
 
 ## Theme Toggle
 
-Dr.Docs ships Midnight Orange as default but allows user choice. All themes use the same layout, typography, spacing, and orange action (#FF9900). Only surface colors change.
+Dr.Docs ships Midnight Orange as default but allows user choice. Orange (#FF9900) stays the signature action in every theme. Only surface colors change. Keep it simple - two options.
 
-- **Midnight Orange (default)** - `data-theme="midnight"` - Ink Black #0B0B0B, Panel #1C1C1C, Border #333333/#454545, White #FFFFFF. High-contrast dark-first.
+- **Midnight Orange (default)** - `data-theme="midnight"` - Ink Black #0B0B0B, Panel #1C1C1C, Deep #141414, Border #333333/#454545, White #FFFFFF, Muted #A0A0A0. High-contrast dark-first, signature orange.
 - **Total White** - `data-theme="white"` - Ink White #FFFFFF, Panel #FFFFFF, Deep #F5F5F5, Border #E5E5E5/#D4D4D4, Text #18181B, Muted #71717A. Clean light, orange stays for primary actions only.
-- **AMOLED Dark** - `data-theme="amoled"` - Ink Pure Black #000000, Panel #0A0A0A, Deep #000000, Border #1A1A1A/#2A2A2A, White #FFFFFF. Battery-friendly OLED, true black.
 
-Implementation: CSS variables `--ink`, `--deep`, `--panel`, etc. defined in `client/src/index.css` for `:root`/`[data-theme="midnight"]`, `[data-theme="white"]`, `[data-theme="amoled"]`. Tailwind colors use `var(--ink)` etc. Toggle in `client/src/App.jsx` header cycles `midnight -> white -> amoled`, persists to `localStorage["dr-docs-theme"]`, and sets `document.documentElement[data-theme]` (also early script in `client/index.html` to avoid flash). All components keep `bg-ink`, `bg-panel`, `text-white` etc. - they resolve via variables. For white theme, `.text-white` is overridden to dark.
+Implementation: CSS variables `--ink`, `--deep`, `--panel`, etc. in `client/src/index.css` for `:root`/`[data-theme="midnight"]` and `[data-theme="white"]`. Tailwind colors use `var(--ink)` etc. Single toggle in `client/src/App.jsx` header switches `midnight <-> white` (Moon/Sun), persists to `localStorage["dr-docs-theme"]`, and sets `document.documentElement[data-theme]` (early script in `client/index.html` avoids flash). AMOLED (`#000000` pure black) was too close to Midnight - removed to keep choice clear. Keep to 2.
 
-Do not remove Midnight Orange. It stays the canonical brand. White and AMOLED are alternatives for accessibility and OLED.
+Do not remove Midnight Orange. It stays the canonical brand. White is the alternative for light preference.
 
 ## Core Design Formula
 
