@@ -21,7 +21,9 @@ The interface should feel like a serious digital product rather than a polished 
 - **Border Dark** (#333333): Default borders and separators
 - **Border Strong** (#454545): Focused or emphasized borders
 - **White** (#FFFFFF): Primary text and high-contrast content
-- **Off White** (#E8E8E8): Secondary text
+- **Text Primary** (`--textPrimary`): Body text, applied by `index.css:113`; #FFFFFF in Midnight, #18181B in Total White
+- **Text Ink** (`--textInk`): Same value as `--textPrimary` in every theme block, referenced by nothing
+- **Off White** (#E8E8E8): Secondary text in Midnight; the token resolves to #18181B in Total White, the same value as `--textPrimary`
 - **Muted Gray** (#A0A0A0): Metadata, helper text, timestamps
 - **Orange** (#FF9900): Primary brand-independent accent and CTA color
 - **Orange Dark** (#E67E00): Pressed and darker orange state
@@ -60,6 +62,9 @@ Gray is for hierarchy.
 - **Headline Font:** Inter
 - **Body Font:** Inter
 - **Mono Font:** JetBrains Mono
+
+Requested weights (`client/src/index.css:1`): Inter 400/500/600/700/800, JetBrains Mono 400/500 only.
+`client/src/App.jsx` requests mono 600 and 700 at `:560` and `:953`, which the font request does not supply.
 
 Typography should be bold, compact, highly readable, and functional.
 
@@ -117,11 +122,15 @@ Midnight Orange uses subtle rounding rather than completely rounded UI.
 
 - **radius-none:** 0px
 - **radius-sm:** 3px
+- **radius-tip:** 4px (no named token; write `rounded-[4px]`, or bare `rounded`, which is 4px by default and unused)
 - **radius-md:** 5px
+- **radius-card:** 6px
 - **radius-lg:** 8px
 - **radius-pill:** 999px
 
-Default components use **4-6px** radius.
+Default components use **5px** radius. Cards use **6px**, tooltips **4px**.
+
+`client/src/App.jsx` writes radii as arbitrary values (`rounded-[5px]`, `rounded-[6px]`, `rounded-[8px]`) or `rounded-full`; `rounded-sm`, `rounded-md` and `rounded-lg` are unused.
 
 Do not use excessive pill-shaped UI.
 
@@ -678,9 +687,9 @@ Avoid elaborate skeleton animations.
 
 Motion should be fast and functional.
 
-- **Fast:** 100ms
-- **Normal:** 160ms
-- **Slow:** 240ms
+- **Fast:** 100ms (`duration-100`)
+- **Normal:** 160ms (no Tailwind utility; `client/tailwind.config.js` defines no `transitionDuration`, so bare `transition` at 150ms is what ships)
+- **Slow:** 240ms (no Tailwind utility for the same reason)
 
 Use ease-out for entering elements.
 
@@ -745,14 +754,21 @@ Mobile layouts should collapse into 1-2 columns.
 
 ## Theme Toggle
 
-Dr.Docs ships Midnight Orange as default but allows user choice. Orange (#FF9900) stays the signature action in every theme. Only surface colors change. Keep it simple - two options.
+Dr.Docs ships Midnight Orange as default but allows user choice. Orange (#FF9900) stays the signature action in every theme: `--orange`, `--orangeDark` (#E67E00) and `--orangeSoft` (#FFB84D) are byte-identical in both blocks. The other 22 of the 25 variables in `client/src/index.css` differ between Midnight and Total White: 6 surfaces and borders (`--ink`, `--deep`, `--panel`, `--elevated`, `--borderDark`, `--borderStrong`), 4 text variables (`--offWhite`, `--muted`, `--textPrimary`, `--textInk`) and all 12 semantic status variables (`--success`, `--warning`, `--error`, `--info` and their `Bg` and `Text` companions). Those three orange variables are the only theme-invariant ones. Keep it simple - two options.
 
 - **Midnight Orange (default)** - `data-theme="midnight"` - Ink Black #0B0B0B, Panel #1C1C1C, Deep #141414, Border #333333/#454545, White #FFFFFF, Muted #A0A0A0. High-contrast dark-first, signature orange.
-- **Total White** - `data-theme="white"` - Ink White #FFFFFF, Panel #FFFFFF, Deep #F5F5F5, Border #E5E5E5/#D4D4D4, Text #18181B, Muted #71717A. Clean light, orange stays for primary actions only.
+- **Total White** - `data-theme="white"` - Ink White #FFFFFF, Panel #FFFFFF, Deep #F5F5F5, Elevated #EEEEEE, Border #E5E5E5/#D4D4D4, Text #18181B, Muted #71717A. Clean light, orange stays for primary actions only. The text colour has no single token: `--offWhite`, `--textPrimary` and `--textInk` all resolve to #18181B in this theme; `--offWhite` is the secondary-text token in Midnight and takes that same value here.
 
-Implementation: CSS variables `--ink`, `--deep`, `--panel`, etc. in `client/src/index.css` for `:root`/`[data-theme="midnight"]` and `[data-theme="white"]`. Tailwind colors use `var(--ink)` etc. Single toggle in `client/src/App.jsx` header switches `midnight <-> white` (Moon/Sun), persists to `localStorage["dr-docs-theme"]`, and sets `document.documentElement[data-theme]` (early script in `client/index.html` avoids flash). AMOLED (`#000000` pure black) was too close to Midnight - removed to keep choice clear. Keep to 2.
+Implementation: CSS variables `--ink`, `--deep`, `--panel`, etc. in `client/src/index.css` are defined under four selectors: `:root` (line 8), `[data-theme="midnight"]` (line 9), `[data-theme="white"]` (line 37) and `[data-theme="amoled"]` (line 65). Tailwind colors use `var(--ink)` etc.
+Tailwind's built-in `text-white` is not theme-aware. `client/src/index.css:118-130` overrides `.text-white`, `.text-offWhite`, `.bg-ink` and `header.bg-ink` with `!important` for the white theme. `client/src/App.jsx` uses `text-white` 18 times and `text-offWhite` 7 times, so those four rules are load-bearing. Do not remove them.
+Single toggle in `client/src/App.jsx` header switches `midnight <-> white` (Moon/Sun), persists to `localStorage["dr-docs-theme"]`, and sets `document.documentElement[data-theme]`. The early script in `client/index.html` sets `data-theme` before first paint so a stored theme is never flashed on load; that is separate from the flash effect below.
+The switch is one-way. White to midnight is immediate. Midnight to white opens a full-screen `Flashbang Warning` overlay (`App.jsx:950-990`) with a 5 second countdown and Cancel/Confirm buttons, and the theme changes only when the user confirms or the countdown reaches zero. `handleThemeToggle` (`App.jsx:184-193`) returns early on that one direction only.
+AMOLED (`#000000` pure black) was dropped from the theme list as too close to Midnight, and it is no longer reachable from any user path: `THEMES` (`App.jsx:29-32`) lists only Midnight and White, `getInitialTheme` discards a stored `amoled` value, and `handleThemeToggle` can only emit `midnight` or `white`.
+Its styling still ships and must not be deleted: the `[data-theme="amoled"]` block at `client/src/index.css:65-91`, the scrollbar rule at `:106-108`, the `.bg-ink` overrides at `:131-136`, the stale comments at `client/src/index.css:7` and `client/tailwind.config.js:12`, and the legacy migration branch at `client/index.html:11` that rewrites a stored `amoled` to `midnight`. The styling is unreachable, not a third option: keep the UI at 2 options.
 
 Do not remove Midnight Orange. It stays the canonical brand. White is the alternative for light preference.
+
+---
 
 ## Core Design Formula
 

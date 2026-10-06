@@ -5,6 +5,7 @@ client/dist/
 server/tmp/
 Temp/
 Docs/
+.opencode/
 .DS_Store
 Thumbs.db
 .env
