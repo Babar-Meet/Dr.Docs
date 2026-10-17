@@ -22,7 +22,7 @@ export default function RelatedTools({ tool }) {
               key={item.id}
               to={`/${item.slug}`}
               title={item.help}
-              className="flex items-center gap-2 rounded-[5px] border border-borderDark bg-deep px-3 py-2.5 font-body text-[13px] font-bold text-offWhite transition hover:border-borderStrong hover:bg-elevated hover:text-white"
+              className="flex items-center gap-2 rounded-[5px] border border-borderDark bg-deep px-3 py-2.5 font-body text-[13px] font-bold text-offWhite transition hover:border-borderStrong hover:bg-elevated hover:text-content"
             >
               <Icon className="h-4 w-4 shrink-0 text-muted" />
               {item.label}

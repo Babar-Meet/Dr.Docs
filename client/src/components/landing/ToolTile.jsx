@@ -28,8 +28,8 @@ export default function ToolTile({ tool, sentence }) {
       to={`/${tool.slug}`}
       className={`${TILE_CLASS} group border-borderDark bg-panel transition hover:border-borderStrong hover:bg-elevated`}
     >
-      <Icon className="h-12 w-12 shrink-0 text-muted transition group-hover:text-white" />
-      <h3 className="font-display text-[15px] font-bold leading-tight text-white">
+      <Icon className="h-12 w-12 shrink-0 text-muted transition group-hover:text-content" />
+      <h3 className="font-display text-[15px] font-bold leading-tight text-content">
         {tool.label}
       </h3>
       <p className="font-body text-[13px] leading-normal text-muted">{sentence}</p>

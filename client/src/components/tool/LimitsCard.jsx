@@ -6,15 +6,15 @@ export default function LimitsCard() {
       </p>
       <div className="mt-2 grid grid-cols-3 gap-2">
         <div className="rounded-[5px] bg-deep px-2 py-2 text-center">
-          <p className="font-display text-sm font-bold text-white">50 MB</p>
+          <p className="font-display text-sm font-bold text-content">50 MB</p>
           <p className="font-mono text-[11px] text-muted">per file</p>
         </div>
         <div className="rounded-[5px] bg-deep px-2 py-2 text-center">
-          <p className="font-display text-sm font-bold text-white">200</p>
+          <p className="font-display text-sm font-bold text-content">200</p>
           <p className="font-mono text-[11px] text-muted">max files</p>
         </div>
         <div className="rounded-[5px] bg-deep px-2 py-2 text-center">
-          <p className="font-display text-sm font-bold text-white">2</p>
+          <p className="font-display text-sm font-bold text-content">2</p>
           <p className="font-mono text-[11px] text-muted">concurrent</p>
         </div>
       </div>

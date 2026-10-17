@@ -18,7 +18,7 @@ export default function TagBar({ active, onChange }) {
                 "inline-flex items-center rounded-full border px-4 py-2 font-body text-sm font-semibold transition " +
                 (isActive
                   ? "border-orange bg-orange text-black"
-                  : "border-borderStrong bg-panel text-offWhite hover:border-[#666666] hover:text-white")
+                  : "border-borderStrong bg-panel text-offWhite hover:border-[#666666] hover:text-content")
               }
             >
               {TAG_LABELS[tag]}

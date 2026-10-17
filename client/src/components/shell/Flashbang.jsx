@@ -11,7 +11,7 @@ export default function Flashbang() {
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-ink/90 px-4 backdrop-blur-sm">
       <div className="w-full max-w-[480px] rounded-[8px] border border-borderDark bg-panel p-6 text-center shadow-[0_12px_32px_rgba(0,0,0,0.6)]">
         <p className="font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-muted">Flashbang Warning</p>
-        <h2 className="mt-2 font-display text-[28px] font-bold leading-none tracking-tight text-white">FLASHBANG INCOMING</h2>
+        <h2 className="mt-2 font-display text-[28px] font-bold leading-none tracking-tight text-content">FLASHBANG INCOMING</h2>
         <p className="mt-3 font-body text-[14px] font-medium leading-[1.4] text-offWhite">
           You are about to leave the Midnight. White mode is 100% brightness. Your retinas may file a complaint.
         </p>
@@ -32,7 +32,7 @@ export default function Flashbang() {
           <button
             type="button"
             onClick={cancelFlashbang}
-            className="rounded-[5px] border border-borderStrong bg-deep px-4 py-3 font-display text-[13px] font-bold text-white hover:bg-elevated"
+            className="rounded-[5px] border border-borderStrong bg-deep px-4 py-3 font-display text-[13px] font-bold text-content hover:bg-elevated"
           >
             Cancel - Keep Me Dark
           </button>

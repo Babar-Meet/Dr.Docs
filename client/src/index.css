@@ -35,14 +35,14 @@
 }
 
 [data-theme="white"] {
-  --ink: #FFFFFF;
-  --deep: #F5F5F5;
+  --ink: #F7F7F8;
+  --deep: #F1F1F3;
   --panel: #FFFFFF;
-  --elevated: #EEEEEE;
-  --borderDark: #E5E5E5;
-  --borderStrong: #D4D4D4;
-  --offWhite: #18181B;
-  --muted: #71717A;
+  --elevated: #ECECEF;
+  --borderDark: #E3E3E8;
+  --borderStrong: #D5D5DB;
+  --offWhite: #1B1B1F;
+  --muted: #6E6E76;
   --orange: #FF9900;
   --orangeDark: #E67E00;
   --orangeSoft: #FFB84D;
@@ -100,7 +100,7 @@ html {
 }
 
 html[data-theme="white"] {
-  scrollbar-color: #D4D4D4 #FFFFFF;
+  scrollbar-color: #D5D5DB #F7F7F8;
 }
 
 html[data-theme="amoled"] {
@@ -114,25 +114,17 @@ body {
   font-family: "Inter", sans-serif;
 }
 
-/* Theme overrides for Tailwind default whites that must adapt to light theme */
-[data-theme="white"] .text-white {
-  color: #18181B !important;
+/* Shadow softening for the light theme; component text uses the semantic
+   text-content token, so no hardcoded text overrides are needed. */
+[data-theme="white"] .shadow-sm {
+  box-shadow: 0 1px 3px rgba(24, 24, 27, 0.10);
 }
-[data-theme="white"] .text-offWhite {
-  color: #18181B !important;
+[data-theme="white"] .shadow-md {
+  box-shadow: 0 2px 8px rgba(24, 24, 27, 0.12);
 }
-[data-theme="white"] .bg-ink {
-  background-color: #FFFFFF !important;
-}
-[data-theme="white"] header.bg-ink {
-  background-color: #FFFFFF !important;
-  border-color: #E5E5E5 !important;
-}
-[data-theme="amoled"] .bg-ink {
-  background-color: #000000 !important;
-}
-[data-theme="amoled"] header.bg-ink {
-  background-color: #000000 !important;
+[data-theme="white"] .shadow-lg,
+[data-theme="white"] .shadow-panel {
+  box-shadow: 0 6px 18px rgba(24, 24, 27, 0.14);
 }
 
 /* Midnight Orange scrollbar for webkit */
@@ -142,16 +134,16 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #0B0B0B;
+  background: var(--ink);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #333333;
+  background: var(--borderStrong);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #454545;
+  background: var(--muted);
 }
 
 /* Focus ring - Midnight Orange spec: 2px orange ring with 2px offset */
@@ -169,7 +161,7 @@ textarea:focus {
 
 #root {
   min-height: 100vh;
-  background: #0B0B0B;
+  background: var(--ink);
 }
 
 /* Selection */

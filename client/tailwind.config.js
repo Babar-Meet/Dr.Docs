@@ -18,6 +18,7 @@ export default {
         borderStrong: "var(--borderStrong)",
         offWhite: "var(--offWhite)",
         muted: "var(--muted)",
+        content: "var(--textPrimary)",
         orange: "var(--orange)",
         orangeDark: "var(--orangeDark)",
         orangeSoft: "var(--orangeSoft)",

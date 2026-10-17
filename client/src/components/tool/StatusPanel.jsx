@@ -57,10 +57,10 @@ export default function StatusPanel({ status }) {
           {status.results.map((item) => (
             <div
               key={item.downloadId}
-              className="flex items-center justify-between gap-3 rounded-[5px] border border-success/30 bg-ink/40 px-3 py-2.5"
+              className="flex items-center justify-between gap-3 rounded-[5px] border border-success/30 bg-deep/60 px-3 py-2.5"
             >
               <div className="min-w-0">
-                <p className="truncate font-body text-xs font-semibold text-white">
+                <p className="truncate font-body text-xs font-semibold text-content">
                   {item.downloadName}
                 </p>
                 <p className="truncate font-mono text-[11px] text-successText/70">
@@ -70,7 +70,7 @@ export default function StatusPanel({ status }) {
               <a
                 href={buildEndpoint(item.downloadUrl)}
                 download={item.downloadName}
-                className="ml-2 inline-flex shrink-0 items-center gap-1 rounded-[5px] bg-success px-2.5 py-1.5 font-display text-xs font-bold text-black hover:bg-[#1a9c4a]"
+                className="ml-2 inline-flex shrink-0 items-center gap-1 rounded-[5px] bg-success px-2.5 py-1.5 font-display text-xs font-bold text-black hover:bg-success/85"
               >
                 <Download className="h-3 w-3" />
                 Download

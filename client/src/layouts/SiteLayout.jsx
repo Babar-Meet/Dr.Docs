@@ -7,7 +7,7 @@ import Flashbang from "../components/shell/Flashbang.jsx";
 // Outlet is deliberately not wrapped in a second one.
 export default function SiteLayout() {
   return (
-    <div className="min-h-screen bg-ink text-white">
+    <div className="min-h-screen bg-ink text-content">
       <Header />
       <Outlet />
       <Footer />

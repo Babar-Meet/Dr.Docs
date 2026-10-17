@@ -29,7 +29,7 @@ export default function SelectedFilesList({
             event.stopPropagation();
             onClear();
           }}
-          className="rounded-[5px] border border-borderStrong bg-deep px-2.5 py-1 font-body text-xs font-semibold text-offWhite hover:bg-elevated hover:text-white"
+          className="rounded-[5px] border border-borderStrong bg-deep px-2.5 py-1 font-body text-xs font-semibold text-offWhite hover:bg-elevated hover:text-content"
         >
           Clear
         </button>
@@ -64,7 +64,7 @@ export default function SelectedFilesList({
                 <FileTypeIcon extension={extension} />
               )}
               <div className="min-w-0 flex-1">
-                <p className="truncate font-body text-[13px] font-semibold leading-tight text-white">
+                <p className="truncate font-body text-[13px] font-semibold leading-tight text-content">
                   {file.name}
                 </p>
                 <p className="mt-1 font-mono text-[11px] leading-none text-muted">
@@ -103,7 +103,7 @@ export default function SelectedFilesList({
                       event.stopPropagation();
                       onReorder(index, -1);
                     }}
-                    className="rounded-[4px] border border-borderDark bg-deep p-1 text-muted transition hover:border-borderStrong hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                    className="rounded-[4px] border border-borderDark bg-deep p-1 text-muted transition hover:border-borderStrong hover:text-content disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     <ArrowUp className="h-3.5 w-3.5" />
                   </button>
@@ -115,7 +115,7 @@ export default function SelectedFilesList({
                       event.stopPropagation();
                       onReorder(index, 1);
                     }}
-                    className="rounded-[4px] border border-borderDark bg-deep p-1 text-muted transition hover:border-borderStrong hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                    className="rounded-[4px] border border-borderDark bg-deep p-1 text-muted transition hover:border-borderStrong hover:text-content disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     <ArrowDown className="h-3.5 w-3.5" />
                   </button>
@@ -129,7 +129,7 @@ export default function SelectedFilesList({
                     event.stopPropagation();
                     onRemove(index);
                   }}
-                  className="mt-1 shrink-0 rounded-[4px] border border-borderDark bg-deep p-1 text-muted transition hover:border-borderStrong hover:text-white"
+                  className="mt-1 shrink-0 rounded-[4px] border border-borderDark bg-deep p-1 text-muted transition hover:border-borderStrong hover:text-content"
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>

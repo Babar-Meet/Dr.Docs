@@ -42,7 +42,7 @@ export default function Header() {
   }).filter((entry) => entry.items.length > 0);
 
   return (
-    <header className="sticky top-0 z-30 border-b border-borderDark bg-ink">
+    <header className="sticky top-0 z-30 border-b border-borderDark bg-panel">
       {/* Midnight Orange spec: Ink Black #0B0B0B, 56-64px, border #333333 */}
       <div className="mx-auto flex h-[60px] max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
         <div className="flex items-center gap-3">
@@ -55,7 +55,7 @@ export default function Header() {
               D
             </div>
             <div>
-              <p className="font-display text-[15px] font-bold leading-none tracking-tight text-white">
+              <p className="font-display text-[15px] font-bold leading-none tracking-tight text-content">
                 Dr.Docs
               </p>
               <p className="font-mono text-[11px] font-normal leading-none text-muted">
@@ -76,7 +76,7 @@ export default function Header() {
                 "inline-flex items-center gap-2 rounded-[5px] border px-3 py-2 font-body text-[13px] font-bold leading-none transition " +
                 (menuOpen
                   ? "border-orange bg-panel text-orange"
-                  : "border-borderStrong bg-panel text-offWhite hover:border-[#666666] hover:text-white")
+                  : "border-borderStrong bg-panel text-offWhite hover:border-[#666666] hover:text-content")
               }
             >
               PDF tools
@@ -119,7 +119,7 @@ export default function Header() {
                           key={tool.id}
                           role="menuitem"
                           to={`/${tool.slug}`}
-                          className="flex items-center gap-2 rounded-[5px] px-2 py-2 font-body text-[13px] font-semibold text-offWhite transition hover:bg-elevated hover:text-white"
+                          className="flex items-center gap-2 rounded-[5px] px-2 py-2 font-body text-[13px] font-semibold text-offWhite transition hover:bg-elevated hover:text-content"
                         >
                           <Icon className="h-4 w-4 shrink-0 text-muted" />
                           {tool.label}

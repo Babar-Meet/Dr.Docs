@@ -30,7 +30,7 @@ export default function DropZone({
         "cursor-pointer rounded-[6px] border-2 border-dashed px-8 py-14 text-center transition " +
         (dragActive
           ? "border-orange bg-elevated"
-          : "border-borderStrong bg-deep hover:border-[#666666] hover:bg-panel")
+          : "border-borderStrong bg-panel hover:border-[#666666] hover:bg-elevated")
       }
     >
       <input
