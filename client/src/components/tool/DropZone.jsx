@@ -1,5 +1,3 @@
-import { UploadCloud } from "lucide-react";
-
 export default function DropZone({
   multiple,
   accept,
@@ -43,14 +41,14 @@ export default function DropZone({
         className="hidden"
         onChange={(event) => onPickFiles(event.target.files)}
       />
-      <UploadCloud
-        className={"mx-auto h-14 w-14 " + (dragActive ? "text-orange" : "text-muted")}
-      />
-      <p className="mx-auto mt-5 max-w-[32ch] font-display text-[17px] font-bold leading-tight text-white">
-        {singlePdfHint
-          ? "Drop one PDF file, or click to upload"
-          : "Drag and drop file(s), or click to upload"}
-      </p>
+      <button
+        type="button"
+        tabIndex={0}
+        className="mx-auto inline-flex items-center gap-2 rounded-[5px] bg-orange px-6 py-3 font-display text-[15px] font-bold leading-none text-black transition shadow-sm hover:bg-orangeSoft active:bg-orangeDark"
+      >
+        {singlePdfHint ? "Select PDF file" : "Select files"}
+      </button>
+      <p className="mt-3 font-body text-[14px] text-offWhite">or drop file(s) here</p>
       <p className="mt-3 font-body text-[13px] text-muted">
         {multiple ? `${formatsLine}, batch up to 200 files` : formatsLine}
       </p>

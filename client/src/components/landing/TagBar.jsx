@@ -1,9 +1,10 @@
 import { TAG_LABELS, TAG_ORDER } from "./LandingData";
 
+// One centered row of chips, the reference product's category filter shape.
 export default function TagBar({ active, onChange }) {
   return (
-    <div role="group" aria-label="Filter tools" className="pb-2">
-      <div className="flex flex-wrap gap-2">
+    <div role="group" aria-label="Filter tools" className="pb-2 pt-1">
+      <div className="flex flex-wrap justify-center gap-2">
         {TAG_ORDER.map((tag) => {
           const isActive = tag === active;
 
@@ -14,10 +15,10 @@ export default function TagBar({ active, onChange }) {
               aria-pressed={isActive}
               onClick={() => onChange(tag)}
               className={
-                "inline-flex items-center rounded-full border px-2.5 py-1 font-body text-xs font-semibold transition " +
+                "inline-flex items-center rounded-full border px-4 py-2 font-body text-sm font-semibold transition " +
                 (isActive
                   ? "border-orange bg-orange text-black"
-                  : "border-borderStrong bg-panel text-offWhite hover:border-orange hover:text-orange")
+                  : "border-borderStrong bg-panel text-offWhite hover:border-[#666666] hover:text-white")
               }
             >
               {TAG_LABELS[tag]}

@@ -10,7 +10,7 @@ export default function ToolTile({ tool, sentence }) {
     return (
       <div
         aria-disabled="true"
-        title={`${tool.label} - not available yet`}
+        title={`${tool.label} - coming soon`}
         className={`${TILE_CLASS} cursor-not-allowed border-borderDark bg-deep`}
       >
         <Icon className="h-12 w-12 shrink-0 text-muted" />
@@ -18,7 +18,7 @@ export default function ToolTile({ tool, sentence }) {
           {tool.label}
         </h3>
         <p className="font-body text-[13px] leading-normal text-muted">{sentence}</p>
-        <StatusChip>Not available</StatusChip>
+        <StatusChip>Coming soon</StatusChip>
       </div>
     );
   }
