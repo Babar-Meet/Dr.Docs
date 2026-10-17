@@ -13,6 +13,7 @@ export default function OptionsPanel({
   files = [],
   operation = "",
   targetFormatLocked = false,
+  singlePdfPages = null,
 }) {
   const resolvedKind = kind && kind !== "info" ? kind : operation;
 
@@ -42,6 +43,7 @@ export default function OptionsPanel({
       <SplitOptions
         pageRanges={state.pageRanges}
         setPageRanges={state.setPageRanges}
+        pdfPages={singlePdfPages}
       />
     );
   }
@@ -53,6 +55,7 @@ export default function OptionsPanel({
         setRotationAngle={state.setRotationAngle}
         pages={state.pages}
         setPages={state.setPages}
+        pdfPages={singlePdfPages}
       />
     );
   }

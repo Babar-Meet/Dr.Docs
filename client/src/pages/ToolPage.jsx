@@ -45,7 +45,14 @@ function ToolRuntime({ tool }) {
         </div>
 
         <div className="mt-4">
-          <SelectedFilesList files={state.selectedFiles} onClear={state.clearFiles} />
+          <SelectedFilesList
+            files={state.selectedFiles}
+            inspections={state.inspections}
+            reorderable={tool.multiple}
+            onReorder={state.reorderFiles}
+            onRemove={state.removeFile}
+            onClear={state.clearFiles}
+          />
         </div>
 
         {hasOptionControls && hasFiles && (
@@ -56,6 +63,7 @@ function ToolRuntime({ tool }) {
               files={state.selectedFiles}
               operation={tool.operation}
               targetFormatLocked={state.targetFormatLocked}
+              singlePdfPages={state.singlePdfPages}
             />
           </div>
         )}
@@ -79,6 +87,13 @@ function ToolRuntime({ tool }) {
               </>
             )}
           </button>
+        )}
+
+        {hasFiles && state.rejectedCount > 0 && !state.isProcessing && (
+          <p className="mt-2 text-center font-body text-[12px] text-orange">
+            Remove the flagged file{state.rejectedCount === 1 ? "" : "s"} to
+            enable processing.
+          </p>
         )}
 
         <div className="mt-4">

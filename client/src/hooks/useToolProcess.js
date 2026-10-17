@@ -1,7 +1,8 @@
-import { useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { buildEndpoint, submitProcess } from "../lib/api";
 import { CONVERSION_TARGETS } from "../lib/conversionTargets";
-import { getExtension, MAX_FILE_SIZE_BYTES } from "../lib/fileUtils";
+import { fileKey, getExtension, MAX_FILE_SIZE_BYTES } from "../lib/fileUtils";
+import { inspectFile, KNOWN_EXTENSIONS } from "../lib/fileInspect";
 
 const ROTATION_ANGLES = ["90", "180", "270"];
 const PAGE_RANGE_PATTERN = /^(\d+(-\d+)?)(\s*,\s*\d+(-\d+)?)*$/;
@@ -29,6 +30,9 @@ function describeExtensions(extensions) {
 export default function useToolProcess(tool) {
   const fileInputRef = useRef(null);
   const [selectedFiles, setSelectedFiles] = useState([]);
+  // Per-file client-side knowledge keyed by name-size, filled in by the
+  // inspector as each file resolves.
+  const [inspections, setInspections] = useState({});
   const [dragActive, setDragActive] = useState(false);
   const [targetFormat, setTargetFormat] = useState(() => tool.targetFormat || "");
   const [pageRanges, setPageRanges] = useState("");
@@ -37,9 +41,42 @@ export default function useToolProcess(tool) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [status, setStatus] = useState(null);
 
+  // Object URLs created for image previews; revoked when the list changes.
+  const liveUrlsRef = useRef([]);
+
+  const revokeLiveUrls = useCallback(() => {
+    for (const url of liveUrlsRef.current) URL.revokeObjectURL(url);
+    liveUrlsRef.current = [];
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      for (const url of liveUrlsRef.current) URL.revokeObjectURL(url);
+    };
+  }, []);
+
   // A pair page carries its target in the tool record; the generic convert hub
   // picks one from the selected files instead.
   const targetFormatLocked = tool.operation === "convert" && Boolean(tool.targetFormat);
+
+  // The extension set this tool can work with, used to warn instantly about
+  // files the tool will refuse instead of only failing after upload.
+  const allowedExtensions = useMemo(() => {
+    if (tool.accept) return new Set(tool.accept.split(","));
+    if (tool.sourceExtensions) return new Set(tool.sourceExtensions);
+    if (tool.operation === "convert") {
+      return new Set(Object.keys(CONVERSION_TARGETS));
+    }
+    return KNOWN_EXTENSIONS;
+  }, [tool.accept, tool.sourceExtensions, tool.operation]);
+
+  const rejectedCount = useMemo(
+    () =>
+      selectedFiles.filter(
+        (file) => inspections[fileKey(file)]?.rejected,
+      ).length,
+    [selectedFiles, inspections],
+  );
 
   const convertTargetOptions = useMemo(() => {
     if (tool.operation !== "convert" || selectedFiles.length === 0) {
@@ -71,8 +108,34 @@ export default function useToolProcess(tool) {
 
     const normalizedFiles = tool.multiple ? incomingFiles : incomingFiles.slice(0, 1);
 
+    // Instant per-file verdicts: the tool's extension gate applied in the
+    // browser, so the user sees what the tool will refuse before any run.
+    const freshInspections = {};
+    for (const file of normalizedFiles) {
+      const allowed = allowedExtensions.has(getExtension(file.name));
+      freshInspections[fileKey(file)] = {
+        key: fileKey(file),
+        objectUrl: "",
+        pages: 0,
+        encrypted: false,
+        damaged: "",
+        rejected: allowed ? "" : describeRejection(file),
+      };
+    }
+
+    revokeLiveUrls();
     setSelectedFiles(normalizedFiles);
+    setInspections(freshInspections);
     setStatus(null);
+
+    // Thumbnails and page counts arrive asynchronously, one file at a time.
+    for (const file of normalizedFiles) {
+      const key = fileKey(file);
+      inspectFile(file).then((info) => {
+        if (info.objectUrl) liveUrlsRef.current.push(info.objectUrl);
+        setInspections((current) => ({ ...current, [key]: { ...current[key], ...info } }));
+      });
+    }
 
     if (tool.operation === "merge") {
       setTargetFormat("pdf");
@@ -83,6 +146,46 @@ export default function useToolProcess(tool) {
       if (targetFormatLocked) return;
       setTargetFormat(commonConvertTargets(normalizedFiles)[0] || "");
     }
+  }
+
+  function describeRejection(file) {
+    if (tool.accept) {
+      return `${tool.label} accepts this file type only: ${describeExtensions(tool.accept.split(","))}`;
+    }
+    if (tool.sourceExtensions) {
+      return `${tool.label} accepts ${describeExtensions(tool.sourceExtensions)} files only`;
+    }
+    if (tool.operation === "convert") {
+      return "No declared conversion target for this file type";
+    }
+    return "This file type is not accepted";
+  }
+
+  function reorderFiles(index, direction) {
+    setSelectedFiles((current) => {
+      const next = [...current];
+      const target = index + direction;
+      if (target < 0 || target >= next.length) return current;
+      const [moved] = next.splice(index, 1);
+      next.splice(target, 0, moved);
+      return next;
+    });
+    setStatus(null);
+  }
+
+  function removeFile(index) {
+    setSelectedFiles((current) => {
+      const removedFile = current[index];
+      if (removedFile) {
+        const key = fileKey(removedFile);
+        if (inspections[key]?.objectUrl) {
+          URL.revokeObjectURL(inspections[key].objectUrl);
+        }
+      }
+      const next = current.filter((_, position) => position !== index);
+      return next;
+    });
+    setStatus(null);
   }
 
   function onDragOver(event) {
@@ -101,7 +204,9 @@ export default function useToolProcess(tool) {
   }
 
   function clearFiles() {
+    revokeLiveUrls();
     setSelectedFiles([]);
+    setInspections({});
     setStatus(null);
   }
 
@@ -239,8 +344,20 @@ export default function useToolProcess(tool) {
     }
   }
 
+  // Page count of the single selected PDF, for the split and rotate inputs.
+  const singlePdfPages = useMemo(() => {
+    if (selectedFiles.length !== 1) return null;
+    const [onlyFile] = selectedFiles;
+    if (getExtension(onlyFile.name) !== ".pdf") return null;
+    const count = inspections[fileKey(onlyFile)]?.pages;
+    return count > 0 ? count : null;
+  }, [selectedFiles, inspections]);
+
   return {
     selectedFiles,
+    inspections,
+    rejectedCount,
+    singlePdfPages,
     dragActive,
     fileInputRef,
     targetFormat,
@@ -256,12 +373,15 @@ export default function useToolProcess(tool) {
     operation: tool.operation,
     targetFormatLocked,
     convertTargetOptions,
-    canSubmit: selectedFiles.length > 0 && !isProcessing,
+    canSubmit:
+      selectedFiles.length > 0 && rejectedCount === 0 && !isProcessing,
     onPickFiles,
     onDrop,
     onDragOver,
     onDragLeave,
     clearFiles,
+    reorderFiles,
+    removeFile,
     submit,
   };
 }
