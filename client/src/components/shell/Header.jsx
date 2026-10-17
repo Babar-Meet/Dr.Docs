@@ -1,4 +1,4 @@
-import { NavLink } from "react-router-dom";
+import { Link, NavLink } from "react-router-dom";
 import { LayoutGrid } from "lucide-react";
 import ThemeToggle from "./ThemeToggle.jsx";
 import { useTheme } from "../../theme/ThemeProvider.jsx";
@@ -42,17 +42,23 @@ export default function Header() {
       {/* Top Navigation - Midnight Orange spec: Ink Black #0B0B0B, 56-64px, border #333333 */}
       <div className="mx-auto flex h-[60px] max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
         <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-[5px] bg-orange text-sm font-bold text-black">
-            D
-          </div>
-          <div>
-            <p className="font-display text-[15px] font-bold leading-none tracking-tight text-white">
-              Dr.Docs
-            </p>
-            <p className="font-mono text-[11px] font-normal leading-none text-muted">
-              {theme === "white" ? "TOTAL WHITE" : "MIDNIGHT ORANGE"}
-            </p>
-          </div>
+          <Link
+            to="/"
+            aria-label="Dr.Docs home"
+            className="flex items-center gap-3 rounded-[5px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange"
+          >
+            <div className="flex h-8 w-8 items-center justify-center rounded-[5px] bg-orange text-sm font-bold text-black">
+              D
+            </div>
+            <div>
+              <p className="font-display text-[15px] font-bold leading-none tracking-tight text-white">
+                Dr.Docs
+              </p>
+              <p className="font-mono text-[11px] font-normal leading-none text-muted">
+                {theme === "white" ? "TOTAL WHITE" : "MIDNIGHT ORANGE"}
+              </p>
+            </div>
+          </Link>
         </div>
         <div className="flex items-center gap-2">
           <ThemeToggle />

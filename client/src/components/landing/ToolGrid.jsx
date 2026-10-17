@@ -1,11 +1,22 @@
-import ToolSection from "./ToolSection";
+import ToolTile from "./ToolTile";
+import { sentenceFor } from "./LandingData";
 
-export default function ToolGrid({ groups, hub }) {
+export default function ToolGrid({ tools }) {
+  if (tools.length === 0) {
+    return (
+      <p className="mt-6 font-body text-[14px] leading-normal text-muted">
+        No tools in this category yet.
+      </p>
+    );
+  }
+
   return (
-    <div className="space-y-10 pt-8">
-      {groups.map((group) => (
-        <ToolSection key={group.key} group={group} hub={hub} />
+    <ul className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      {tools.map((tool) => (
+        <li key={tool.id} className="h-full">
+          <ToolTile tool={tool} sentence={sentenceFor(tool)} />
+        </li>
       ))}
-    </div>
+    </ul>
   );
 }
