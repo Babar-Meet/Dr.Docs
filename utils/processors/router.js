@@ -20,7 +20,13 @@ import {
   repairImage,
 } from "./imageProcessor.js";
 import { normalizeZip, repairZip } from "./zipProcessor.js";
-import { convertWithLibreOffice } from "./conversionProcessor.js";
+import {
+  convertWithInlineTextExtractors,
+  convertWithLibreOffice,
+  PDF_INTO_WRITER_INFILTER,
+  sofficeInfilterForConvert,
+  usesInlineTextExtractors,
+} from "./conversionProcessor.js";
 import {
   compressPdf,
   repairPdf,
@@ -165,11 +171,45 @@ async function convertByType({
     return `Image converted to ${targetFormat.toUpperCase()}.`;
   }
 
+  // Gate entry point: LibreOffice has no plain-text export filter for the
+  // Draw, Impress and Calc documents it builds from .pdf, .pptx and .xlsx,
+  // so these three declared pairs reuse the extractors the ocr operation
+  // runs instead of soffice. See TEXT_FALLBACK_SOURCE_EXTENSIONS in
+  // conversionProcessor.js for why the gate is exactly these three pairs.
+  // An encrypted PDF still answers PASSWORD_REQUIRED with
+  // SECURE_ENCRYPTION_MESSAGE because the pdf-parse check runs first.
+  if (
+    usesInlineTextExtractors({
+      sourceExtension: fileType.extension,
+      targetFormat,
+    })
+  ) {
+    await convertWithInlineTextExtractors({
+      inputPath,
+      sourceExtension: fileType.extension,
+      outputPath,
+    });
+    return "File converted successfully.";
+  }
+
+  // A .pdf source imports as a Draw document by default, and a Draw model
+  // cannot be stored through the docx, odt, rtf or pptx export filters, so
+  // sofficeInfilterForConvert picks the import filter that loads the same
+  // file into the module that owns the target's export filter
+  // (writer_pdf_import for docx/odt/rtf, impress_pdf_import for pptx). For
+  // every other source and target it returns null, which keeps the plain
+  // soffice call those pairs have always used. Encrypted PDFs fail the
+  // soffice load itself ("source file could not be loaded"), so strong
+  // encryption is never bypassed here.
   await convertWithLibreOffice({
     inputPath,
     targetFormat,
     outputPath,
     libreOfficeBin,
+    infilter: sofficeInfilterForConvert({
+      sourceExtension: fileType.extension,
+      targetFormat,
+    }),
   });
 
   return "File converted successfully.";
@@ -254,11 +294,18 @@ async function mergeByType({
     return "Files merged into one PDF successfully.";
   }
 
+  // LibreOffice imports a PDF as a Draw document by default and Draw cannot
+  // be exported as DOCX ("Error: no export filter"), so this step passes
+  // PDF_INTO_WRITER_INFILTER to load the merged PDF into a Writer document,
+  // from which the docx export filter works. The merged PDF is produced by
+  // pdf-lib and inputs that are encrypted fail earlier in this flow with
+  // PASSWORD_REQUIRED, so no encryption is bypassed here.
   await convertWithLibreOffice({
     inputPath: mergedPdfPath,
     targetFormat: "docx",
     outputPath,
     libreOfficeBin,
+    infilter: PDF_INTO_WRITER_INFILTER,
   });
   return "Files merged and exported as DOCX successfully.";
 }
