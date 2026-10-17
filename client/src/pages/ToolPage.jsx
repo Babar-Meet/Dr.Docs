@@ -26,7 +26,7 @@ function ToolRuntime({ tool }) {
   ].includes(tool.operation);
 
   return (
-    <main className="mx-auto max-w-2xl px-4 pb-16 pt-8 sm:px-6">
+    <main className="mx-auto w-full max-w-3xl px-4 pb-16 pt-8 sm:px-6 lg:max-w-4xl 2xl:max-w-5xl">
       <div className="flex min-h-[calc(100svh-200px)] flex-col justify-center">
         <ToolIntro tool={tool} />
 
