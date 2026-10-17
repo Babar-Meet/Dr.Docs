@@ -11,6 +11,17 @@ export default function DropZone({
   onDrop,
   singlePdfHint,
 }) {
+  const formats = accept
+    ? accept
+        .split(",")
+        .map((entry) => entry.replace(".", "").trim().toUpperCase())
+        .filter(Boolean)
+        .join(", ")
+    : null;
+  const formatsLine = formats
+    ? `Supported: ${formats} (max 50MB each)`
+    : "Any supported file type, 50MB each";
+
   return (
     <section
       onDragOver={onDragOver}
@@ -18,7 +29,7 @@ export default function DropZone({
       onDrop={onDrop}
       onClick={() => fileInputRef.current?.click()}
       className={
-        "cursor-pointer rounded-[6px] border-2 border-dashed p-8 text-center transition " +
+        "cursor-pointer rounded-[6px] border-2 border-dashed px-8 py-14 text-center transition " +
         (dragActive
           ? "border-orange bg-elevated"
           : "border-borderStrong bg-deep hover:border-[#666666] hover:bg-panel")
@@ -33,18 +44,15 @@ export default function DropZone({
         onChange={(event) => onPickFiles(event.target.files)}
       />
       <UploadCloud
-        className={"mx-auto h-10 w-10 " + (dragActive ? "text-orange" : "text-muted")}
+        className={"mx-auto h-14 w-14 " + (dragActive ? "text-orange" : "text-muted")}
       />
-      <p className="mx-auto mt-4 max-w-[28ch] font-display text-[15px] font-bold leading-tight text-white">
+      <p className="mx-auto mt-5 max-w-[32ch] font-display text-[17px] font-bold leading-tight text-white">
         {singlePdfHint
           ? "Drop one PDF file, or click to upload"
           : "Drag and drop file(s), or click to upload"}
       </p>
-      <p className="mt-2 font-body text-[13px] text-muted">
-        Supported: PDF, DOCX, PPTX, XLSX, JPG, PNG, ZIP (max 50MB each)
-      </p>
-      <p className="mt-3 inline-flex items-center gap-2 rounded-full border border-borderDark bg-panel px-3 py-1 font-mono text-[11px] text-muted">
-        Click to browse - Batch up to 200 files
+      <p className="mt-3 font-body text-[13px] text-muted">
+        {multiple ? `${formatsLine}, batch up to 200 files` : formatsLine}
       </p>
     </section>
   );

@@ -2,14 +2,10 @@ import ConvertOptions from "./ConvertOptions.jsx";
 import MergeOptions from "./MergeOptions.jsx";
 import SplitOptions from "./SplitOptions.jsx";
 import RotateOptions from "./RotateOptions.jsx";
-import InfoOptions from "./InfoOptions.jsx";
 
-// ToolRecord.kind is "info" for compress, unlock, ocr and repair, so the four
-// informational panels cannot be told apart from `kind` alone. OptionsPanel
-// therefore reads the tool's operation as well: either pass `kind` as the
-// operation (for example kind="compress") or pass the record's kind plus the
-// optional `operation` prop.
-const INFO_KINDS = ["compress", "unlock", "ocr", "repair"];
+// ToolRecord.kind is "info" for compress, unlock, ocr and repair; those tools
+// have no selectable options, so they render no panel here. Their per-engine
+// notes live in ToolPage's About section.
 
 export default function OptionsPanel({
   kind,
@@ -59,10 +55,6 @@ export default function OptionsPanel({
         setPages={state.setPages}
       />
     );
-  }
-
-  if (INFO_KINDS.includes(resolvedKind)) {
-    return <InfoOptions kind={resolvedKind} />;
   }
 
   return null;

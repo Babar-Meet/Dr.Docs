@@ -14,7 +14,7 @@ export default function RelatedTools({ tool }) {
       <p className="font-display text-[12px] font-semibold uppercase tracking-[0.08em] text-muted">
         Related tools
       </p>
-      <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mt-3 grid grid-cols-2 gap-2">
         {siblings.map((item) => {
           const Icon = item.icon;
           return (
