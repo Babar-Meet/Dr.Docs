@@ -64,7 +64,7 @@ Gray is for hierarchy.
 - **Mono Font:** JetBrains Mono
 
 Requested weights (`client/src/index.css:1`): Inter 400/500/600/700/800, JetBrains Mono 400/500 only.
-`client/src/App.jsx` requests mono 600 and 700 at `:560` and `:953`, which the font request does not supply.
+`client/src/App.jsx` requests mono 600 for the tool index badge in the tool header card and mono 700 for the `Flashbang Warning` overlay label, neither of which the font request supplies.
 
 Typography should be bold, compact, highly readable, and functional.
 
@@ -760,10 +760,10 @@ Dr.Docs ships Midnight Orange as default but allows user choice. Orange (#FF9900
 - **Total White** - `data-theme="white"` - Ink White #FFFFFF, Panel #FFFFFF, Deep #F5F5F5, Elevated #EEEEEE, Border #E5E5E5/#D4D4D4, Text #18181B, Muted #71717A. Clean light, orange stays for primary actions only. The text colour has no single token: `--offWhite`, `--textPrimary` and `--textInk` all resolve to #18181B in this theme; `--offWhite` is the secondary-text token in Midnight and takes that same value here.
 
 Implementation: CSS variables `--ink`, `--deep`, `--panel`, etc. in `client/src/index.css` are defined under four selectors: `:root` (line 8), `[data-theme="midnight"]` (line 9), `[data-theme="white"]` (line 37) and `[data-theme="amoled"]` (line 65). Tailwind colors use `var(--ink)` etc.
-Tailwind's built-in `text-white` is not theme-aware. `client/src/index.css:118-130` overrides `.text-white`, `.text-offWhite`, `.bg-ink` and `header.bg-ink` with `!important` for the white theme. `client/src/App.jsx` uses `text-white` 18 times and `text-offWhite` 7 times, so those four rules are load-bearing. Do not remove them.
+Tailwind's built-in `text-white` is not theme-aware. `client/src/index.css:118-130` overrides `.text-white`, `.text-offWhite`, `.bg-ink` and `header.bg-ink` with `!important` for the white theme. `client/src/App.jsx` uses `text-white` 18 times and `text-offWhite` 8 times, so those four rules are load-bearing. Do not remove them.
 Single toggle in `client/src/App.jsx` header switches `midnight <-> white` (Moon/Sun), persists to `localStorage["dr-docs-theme"]`, and sets `document.documentElement[data-theme]`. The early script in `client/index.html` sets `data-theme` before first paint so a stored theme is never flashed on load; that is separate from the flash effect below.
-The switch is one-way. White to midnight is immediate. Midnight to white opens a full-screen `Flashbang Warning` overlay (`App.jsx:950-990`) with a 5 second countdown and Cancel/Confirm buttons, and the theme changes only when the user confirms or the countdown reaches zero. `handleThemeToggle` (`App.jsx:184-193`) returns early on that one direction only.
-AMOLED (`#000000` pure black) was dropped from the theme list as too close to Midnight, and it is no longer reachable from any user path: `THEMES` (`App.jsx:29-32`) lists only Midnight and White, `getInitialTheme` discards a stored `amoled` value, and `handleThemeToggle` can only emit `midnight` or `white`.
+The switch is one-way. White to midnight is immediate. Midnight to white opens a full-screen `Flashbang Warning` overlay with a 5 second countdown and Cancel/Confirm buttons, and the theme changes only when the user confirms or the countdown reaches zero. `handleThemeToggle` returns early on that one direction only.
+AMOLED (`#000000` pure black) was dropped from the theme list as too close to Midnight, and it is no longer reachable from any user path: `THEMES` lists only Midnight and White, `getInitialTheme` discards a stored `amoled` value, and `handleThemeToggle` can only emit `midnight` or `white`.
 Its styling still ships and must not be deleted: the `[data-theme="amoled"]` block at `client/src/index.css:65-91`, the scrollbar rule at `:106-108`, the `.bg-ink` overrides at `:131-136`, the stale comments at `client/src/index.css:7` and `client/tailwind.config.js:12`, and the legacy migration branch at `client/index.html:11` that rewrites a stored `amoled` to `midnight`. The styling is unreachable, not a third option: keep the UI at 2 options.
 
 Do not remove Midnight Orange. It stays the canonical brand. White is the alternative for light preference.

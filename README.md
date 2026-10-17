@@ -1,6 +1,6 @@
 # Dr.Docs
 
-Local toolkit for everyday documents: it runs on your own machine and handles PDFs, Office files, images and ZIP archives. It removes removable restrictions, converts formats, merges, splits, rotates, compresses and extracts text, and never bypasses a password or DRM. No third-party service receives your documents: files are written under `server/tmp/` and deleted after download or by a 30 minute sweep. The product does make two outbound requests, and neither one carries a document: every page load asks Google Fonts for the Inter and JetBrains Mono stylesheets, and the first image OCR downloads the Tesseract `eng` language model from the public jsDelivr CDN and caches it. Both are listed under [Security](#security). No signup, no account, nothing to pay. Use is restricted: see [License](#license).
+Local toolkit for everyday documents: it runs on your own machine and handles PDFs, Office files, images and ZIP archives. It removes removable restrictions, converts formats, merges, splits, rotates, compresses, repairs damaged files and extracts text, and never bypasses a password or DRM. No third-party service receives your documents: files are written under `server/tmp/` and deleted after download or by a 30 minute sweep. The product does make two outbound requests, and neither one carries a document: every page load asks Google Fonts for the Inter and JetBrains Mono stylesheets, and the first image OCR downloads the Tesseract `eng` language model from the public jsDelivr CDN and caches it. Both are listed under [Security](#security). No signup, no account, nothing to pay. Use is restricted: see [License](#license).
 
 > Hard is good. Facts here are checked against `package.json`, `setup.bat`, `start.bat`, `server/src/config.js` and `utils/constants.js`. TL;DR: install `qpdf` and LibreOffice, then `npm install` and `npm run dev`, then open `http://localhost:5173`. On Windows, `setup.bat` then `start.bat` does the same thing.
 
@@ -29,7 +29,7 @@ Office files often carry removable restrictions (read-only, sheet protection) an
 
 Dr.Docs gives one web UI to:
 - Strip **removable** restrictions (not strong encryption)
-- Convert, merge, split, rotate, compress and OCR
+- Convert, merge, split, rotate, compress, repair and OCR
 - Never bypass password/DRM - those always fail with `This file is securely encrypted and requires the original password.`
 
 Audience: students/faculty who get locked files and need to batch-process quickly.
@@ -44,8 +44,9 @@ Audience: students/faculty who get locked files and need to batch-process quickl
 - **Split** - PDF by ranges `1-3,5,7-10` or each page individually via `pdf-lib`.
 - **Rotate** - PDF pages `90/180/270`, `all` or `1,3-5,8` via `pdf-lib`.
 - **Compress** - PDF lossless via `qpdf --linearize --object-streams=generate --stream-data=compress` (linearised, object streams, compressed streams). Output size depends on the source file.
+- **Repair** - Rebuild a damaged file and return the same format: PDF via `qpdf --linearize`; DOCX/PPTX package loaded by `jszip`, DOCX readability checked by `mammoth`, document properties removed and the package rewritten; XLSX reloaded by ExcelJS; ZIP rebuilt by `jszip`; JPG/JPEG/PNG re-encoded by `sharp`. Strong encryption is never bypassed.
 - **OCR / Extract** - PDF `pdf-parse`, DOCX `mammoth`, XLSX `ExcelJS`, PPTX `a:t` parse, images `Tesseract.js` -> `.txt`.
-- **Batch + Hardening** - Up to 200 files, per-file downloads + batch ZIP, `AsyncTaskQueue(2)` limits LibreOffice/qpdf, 384 backend tests (TAP English), `Docs/` fixtures survive `Temp/` wipe.
+- **Batch + Hardening** - Up to 200 files, per-file downloads + batch ZIP, `AsyncTaskQueue(2)` limits LibreOffice/qpdf, each concurrent LibreOffice conversion gets its own profile directory so two conversions cannot collide, 477 backend tests (TAP English), `Docs/` fixtures survive `Temp/` wipe.
 
 Accepted uploads: `pdf`, `docx`, `pptx`, `xlsx`, `jpg`, `jpeg`, `png`, `zip`, 50MB per file. Each tool takes a different subset:
 
@@ -57,6 +58,7 @@ Accepted uploads: `pdf`, `docx`, `pptx`, `xlsx`, `jpg`, `jpeg`, `png`, `zip`, 50
 | Split | exactly 1 PDF | page ranges like `1-3,5,7-10` |
 | Rotate | exactly 1 PDF | angle 90, 180 or 270, all pages or `1,3-5,8` |
 | Compress | 1 or more PDF | lossless, output size depends on the source file |
+| Repair | PDF, DOCX, PPTX, XLSX, ZIP, JPG, JPEG, PNG | rebuilds in the same format, every accepted upload type |
 | OCR / text | PDF, DOCX, PPTX, XLSX, JPG, JPEG, PNG | no ZIP; output is `.txt` |
 
 `webp`, `avif` and `tiff` are conversion outputs only. They are rejected as uploads.
@@ -75,7 +77,7 @@ Accepted uploads: `pdf`, `docx`, `pptx`, `xlsx`, `jpg`, `jpeg`, `png`, `zip`, 50
 | Image | sharp |
 | OCR | tesseract.js |
 | Archive | archiver, unzipper, yauzl |
-| Test | node:test + node:assert/strict --test-reporter=tap (384, no UI tests) |
+| Test | node:test + node:assert/strict --test-reporter=tap (477, no UI tests) |
 | Dev | nodemon, concurrently |
 
 ---
@@ -93,7 +95,7 @@ Dr.Docs/
 |-- .gitignore                   # node_modules, client/dist, server/tmp, Temp/, Docs/, .env, *.log
 |-- client/                      # React SPA (Vite :5173)
 |   |-- src/
-|   |   |-- App.jsx              # all 7 tools UI (no split), drag-drop, format picker
+|   |   |-- App.jsx              # all 8 tools UI (no split), drag-drop, format picker
 |   |   |-- main.jsx             # BrowserRouter wrapper
 |   |   -- index.css
 |   |-- index.html               # <title>Dr.Docs</title>
@@ -114,10 +116,11 @@ Dr.Docs/
 |   |-- tmp/                     # runtime (gitignored): uploads, outputs, work
 |   -- package.json              # dr-docs-server
 |-- utils/                       # shared, not a workspace, imported via ../../../utils/
-|   |-- constants.js             # MIME_BY_EXTENSION, CONVERSION_TARGETS, OPERATION_MODES (7), SECURE_ENCRYPTION_MESSAGE plain English
+|   |-- constants.js             # MIME_BY_EXTENSION, CONVERSION_TARGETS, OPERATION_MODES (8), SECURE_ENCRYPTION_MESSAGE plain English
 |   |-- errors.js                # AppError(message, code="PROCESSING_FAILED", statusCode=500, details={})
 |   |-- helpers/
 |   |   |-- command.js           # spawn + timeout SIGTERM (4m for soffice)
+|   |   |-- libreOfficeProfile.js # per-conversion soffice user profile slots under OS temp
 |   |   |-- fileType.js          # detect, isAllowedUpload, isValidOperation/Conversion
 |   |   |-- fs.js                # safeUnlink/safeRemoveDir no-throw
 |   |   -- office.js             # isOleCompoundBuffer, validateOfficePackage, removeDocProps
@@ -133,9 +136,11 @@ Dr.Docs/
 |       |-- ocrProcessor.js
 |       |-- rotateProcessor.js   # pdf-lib rotate
 |       -- (compress via pdfProcessor)
-|-- tests/                       # backend only, 384 TAP, no UI (volatile)
+|-- tests/                       # backend only, 477 TAP, no UI (volatile)
+|   |-- contract/frozenBehaviour.test.js
 |   |-- utils/helpers/fileType.test.js, office.test.js, command.test.js, fs.test.js
-|   |-- utils/processors/router.test.js, pdf/office/excel/zip/image/mergeSplit/ocr/conversion.test.js
+|   |-- utils/processors/router.test.js, repairProcessor.test.js, concurrentConversion.test.js, pdf/office/excel/zip/image/mergeSplit/ocr/conversion.test.js
+|   |-- server/routes/files.test.js
 |   |-- server/services/asyncQueue.test.js, downloadStore.test.js
 |   |-- server/middleware/upload.test.js, errorHandler.test.js
 |   -- security/noSecrets.test.js, gitSafe.test.js
@@ -166,7 +171,7 @@ Browser (Vite :5173)  -->  Express :5000
 Frontend state: useState only. Backend state: in-memory Map + queue. No DB.
 ```
 
-Flow: upload -> multer uuid -> queue (2 concurrent) -> `router.processFile({operation,targetFormat,pageRanges,rotationAngle,pages,inputFiles,outputBasePath,workDir,qpdfBin,libreOfficeBin})` -> processor writes `server/tmp/outputs/<id>_<idx>_<name>.ext` for unlock, convert, ocr, rotate and compress, `outputs/<id>.pdf` for merge, and `outputs/<prefix>_part_<n>_page_<x>.pdf` (or `_part_<n>_pages_<a>-<b>.pdf` for a multi-page range) for split -> register UUID -> respond -> frontend shows per-file + Download All -> `GET /download/:id` streams and deletes.
+Flow: upload -> multer uuid -> queue (2 concurrent) -> `router.processFile({operation,targetFormat,pageRanges,rotationAngle,pages,inputFiles,outputBasePath,workDir,qpdfBin,libreOfficeBin})` -> processor writes `server/tmp/outputs/<id>_<idx>_<name>.ext` for unlock, convert, ocr, rotate, compress and repair, `outputs/<id>.pdf` for merge, and `outputs/<prefix>_part_<n>_page_<x>.pdf` (or `_part_<n>_pages_<a>-<b>.pdf` for a multi-page range) for split -> register UUID -> respond -> frontend shows per-file + Download All -> `GET /download/:id` streams and deletes.
 
 ---
 
@@ -174,7 +179,7 @@ Flow: upload -> multer uuid -> queue (2 concurrent) -> `router.processFile({oper
 
 ### `POST /process`
 `multipart/form-data`
-- `operation` default `unlock`: `unlock|convert|merge|split|ocr|rotate|compress`
+- `operation` default `unlock`: `unlock|convert|merge|split|ocr|rotate|compress|repair`
 - `targetFormat` for `convert` (e.g. `pdf`) and `merge` (`pdf|docx`)
 - `pageRanges` for `split` e.g. `1-3,5,7-10`
 - `rotationAngle` for `rotate`: `90|180|270`
@@ -215,7 +220,7 @@ UUID from `/process`. Streams file, then deletes record+file. 404 if unknown/exp
 
 - **No bypass:** OLE header `d0 cf 11 e0 a1 b1 1a e1` (Office), yauzl `generalPurposeBitFlag & 0x1` (ZIP), qpdf stderr `password` (PDF) -> `PASSWORD_REQUIRED`.
 - **Validate:** extension + MIME vs `MIME_BY_EXTENSION`, `application/octet-stream` allowed as fallback.
-- **Isolate:** uploads `Date.now()-uuid.ext` in `UPLOAD_DIR`, outputs flat files in `OUTPUT_DIR` with no per-job directory (split parts use a sanitized filename prefix and carry no uuid), no user path use. Nothing launches an upload as a program or script, with one exception: `convert` hands the uploaded path to `soffice --headless --convert-to` for PDF, DOCX, PPTX and XLSX input, and `merge` does the same for non-PDF, non-image input (`utils/processors/conversionProcessor.js:26-37`, reached from `utils/processors/router.js:127` and `:168`), which opens the document in LibreOffice. This repository sets no LibreOffice macro security level and supplies no locked-down user profile, so no macro-execution guarantee is made on that path.
+- **Isolate:** uploads `Date.now()-uuid.ext` in `UPLOAD_DIR`, outputs flat files in `OUTPUT_DIR` with no per-job directory (split parts use a sanitized filename prefix and carry no uuid), no user path use. Nothing launches an upload as a program or script, with one exception: `convert` hands the uploaded path to `soffice --headless --convert-to` for PDF, DOCX, PPTX and XLSX input, and `merge` does the same for non-PDF, non-image input (`utils/processors/conversionProcessor.js:29-43`, reached from `utils/processors/router.js:168` and `:209`), which opens the document in LibreOffice. This repository sets no LibreOffice macro security level. Each conversion now runs against its own `-env:UserInstallation` profile under the OS temp directory (`utils/helpers/libreOfficeProfile.js`), which keeps two concurrent conversions from colliding, but that profile is a fresh default, not a hardened one, so no macro-execution guarantee is made on that path.
 - **Clean:** uploads deleted in `finally`, outputs deleted after download or sweep.
 - **Network:** two outbound requests, neither carrying a document.
   1. Font stylesheet, every page load in dev and prod: `client/src/index.css:1` is `@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap")`, and Vite keeps it at the top of the built bundle (`client/dist/assets/index-y9ft1sBA.css`). Google sees the visitor's IP address and User-Agent. No document.
@@ -231,7 +236,7 @@ Tests in `tests/security/` enforce this + gitignore (`Temp/ Docs/ server/tmp/ cl
 
 Prereqs: Node.js 18.17+ for `dev`, `build` and `start` (the floor comes from `sharp`, a runtime dependency, not Vite), Node.js 21+ for `npm test` (its script passes an unquoted glob as the final argument, which `node --test` accepts from Node 21), `qpdf` and `soffice` (LibreOffice) on PATH. No `engines` field is declared in any manifest.
 
-Without `qpdf`: PDF unlock and PDF compress fail. Without `soffice`: every LibreOffice conversion fails, which is every conversion except image-to-PDF and image-to-image, plus every merge with a DOCX, PPTX or XLSX input, and every merge exported to DOCX. Split, rotate, image conversion, a PDF-output merge whose inputs are all PDF or images, and ZIP unlock keep working.
+Without `qpdf`: PDF unlock, PDF compress and PDF repair fail. Without `soffice`: every LibreOffice conversion fails, which is every conversion except image-to-PDF and image-to-image, plus every merge with a DOCX, PPTX or XLSX input, and every merge exported to DOCX. Split, rotate, image conversion, a PDF-output merge whose inputs are all PDF or images, and ZIP unlock keep working.
 
 Windows (Chocolatey):
 ```powershell
@@ -275,11 +280,11 @@ Dev: `npm run dev`, then open `http://localhost:5173` (hot reload, API proxied t
 Backend only (UI volatile, not tested). TAP English, no emoji, no box-drawing so no mojibake on Windows.
 
 ```bash
-npm test                 # node --test --test-reporter=tap tests/**/*.test.js (384, 0 fail)
+npm test                 # node --test --test-reporter=tap tests/**/*.test.js (477 tests)
 npm run test:watch       # watch mode
 ```
 
-Coverage: helpers (fileType, office, command timeout SIGTERM, fs no-throw), processors (router 7 modes, pdf/office/excel/zip/image/mergeSplit/ocr/conversion with PASSWORD_REQUIRED, FILE_CORRUPTED, double-click idempotent), services (asyncQueue concurrency 2 FIFO, downloadStore TTL), middleware (upload fileFilter, errorHandler), security (noSecrets, gitSafe).
+Coverage: helpers (fileType, office, command timeout SIGTERM, fs no-throw), processors (router 8 modes, repair, concurrent LibreOffice conversions, pdf/office/excel/zip/image/mergeSplit/ocr/conversion with PASSWORD_REQUIRED, FILE_CORRUPTED, double-click idempotent), services (asyncQueue concurrency 2 FIFO, downloadStore TTL), middleware (upload fileFilter, errorHandler), contract (frozen behaviour), security (noSecrets, gitSafe).
 
 `npm run build -w client` must stay green before stage.
 
@@ -310,7 +315,7 @@ Fixtures: `Docs/` is local only and untracked (gitignored), so git never commits
 Server: `express`, `cors`, `multer`, `fs-extra`, `sharp`, `pdf-lib`, `pdf-parse`, `mammoth`, `exceljs`, `jszip`, `archiver`, `yauzl`, `tesseract.js`, `mime-types`, `nodemon` dev.  
 Client: `react`, `react-dom`, `react-router-dom`, `lucide-react`, `vite`, `@vitejs/plugin-react`, `tailwindcss`, `postcss`, `autoprefixer`.
 
-Internal: `server/src/routes/files.js -> upload, asyncQueue, processService, downloadStore`; `processService -> router, config, fs`; `router -> helpers/fileType, processors/*`.
+Internal: `server/src/routes/files.js -> upload, asyncQueue, processService, downloadStore`; `processService -> router, config, fs`; `router -> helpers/fileType, processors/*`; `processors/conversionProcessor -> helpers/libreOfficeProfile`.
 
 ---
 

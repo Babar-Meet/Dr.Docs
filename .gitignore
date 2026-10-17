@@ -6,6 +6,7 @@ server/tmp/
 Temp/
 Docs/
 .opencode/
+.playwright-mcp/
 .DS_Store
 Thumbs.db
 .env

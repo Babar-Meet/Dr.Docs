@@ -9,15 +9,21 @@ import {
   normalizeTargetFormat,
 } from "../helpers/fileType.js";
 import {
+  repairOfficeDocument,
   unlockDocxRestrictions,
   unlockPptxRestrictions,
 } from "./officeProcessor.js";
-import { unlockXlsxSheetProtection } from "./excelProcessor.js";
-import { convertImageToFormat, convertImageToPdf } from "./imageProcessor.js";
-import { normalizeZip } from "./zipProcessor.js";
+import { repairXlsx, unlockXlsxSheetProtection } from "./excelProcessor.js";
+import {
+  convertImageToFormat,
+  convertImageToPdf,
+  repairImage,
+} from "./imageProcessor.js";
+import { normalizeZip, repairZip } from "./zipProcessor.js";
 import { convertWithLibreOffice } from "./conversionProcessor.js";
 import {
   compressPdf,
+  repairPdf,
   unlockPdfRestrictions,
 } from "./pdfProcessor.js";
 import { mergePdfFiles, splitPdfByRanges } from "./mergeSplitProcessor.js";
@@ -101,6 +107,41 @@ async function unlockByType({ fileType, inputPath, outputPath, qpdfBin }) {
   }
 
   throw unsupportedFile("Unlock supports PDF, DOCX, PPTX, XLSX, and ZIP.");
+}
+
+async function repairByType({ fileType, inputPath, outputPath, qpdfBin }) {
+  if (fileType.extension === ".pdf") {
+    await repairPdf({ inputPath, outputPath, qpdfBin });
+    return "PDF rebuilt and linearized.";
+  }
+
+  if (fileType.extension === ".docx" || fileType.extension === ".pptx") {
+    await repairOfficeDocument({
+      inputPath,
+      outputPath,
+      extension: fileType.extension,
+    });
+    return `${fileType.extension.slice(1).toUpperCase()} package validated and rewritten.`;
+  }
+
+  if (fileType.extension === ".xlsx") {
+    await repairXlsx({ inputPath, outputPath });
+    return "XLSX workbook reloaded and rewritten.";
+  }
+
+  if (fileType.extension === ".zip") {
+    await repairZip({ inputPath, outputPath });
+    return "ZIP validated and rebuilt successfully.";
+  }
+
+  if (fileType.kind === "image") {
+    await repairImage({ inputPath, outputPath });
+    return "Image decoded and re-encoded.";
+  }
+
+  throw unsupportedFile(
+    "Repair supports PDF, DOCX, PPTX, XLSX, ZIP, JPG, and PNG.",
+  );
 }
 
 async function convertByType({
@@ -407,6 +448,29 @@ export async function processFile({
       const outputExtension = fileType.extension;
       const outputPath = createOutputPath(perFileBase, outputExtension);
       const message = await unlockByType({
+        fileType,
+        inputPath: file.path,
+        outputPath,
+        qpdfBin,
+      });
+      await ensureOutputExists(outputPath);
+
+      outputs.push(
+        createDescriptor({
+          outputPath,
+          outputExtension,
+          sourceName: file.originalName,
+          detectedType: fileType.extension.slice(1).toUpperCase(),
+          message,
+        }),
+      );
+      continue;
+    }
+
+    if (normalizedOperation === "repair") {
+      const outputExtension = fileType.extension;
+      const outputPath = createOutputPath(perFileBase, outputExtension);
+      const message = await repairByType({
         fileType,
         inputPath: file.path,
         outputPath,

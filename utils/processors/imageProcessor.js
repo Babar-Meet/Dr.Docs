@@ -40,12 +40,22 @@ export async function repairImage({ inputPath, outputPath }) {
   const metadata = await getImageMetadata(inputPath);
   const pipeline = sharp(inputPath).rotate();
 
-  if (metadata.format === "png") {
-    await pipeline.png({ compressionLevel: 8 }).toFile(outputPath);
-    return;
-  }
+  try {
+    if (metadata.format === "png") {
+      await pipeline.png({ compressionLevel: 8 }).toFile(outputPath);
+      return;
+    }
 
-  await pipeline.jpeg({ quality: 90, mozjpeg: true }).toFile(outputPath);
+    await pipeline.jpeg({ quality: 90, mozjpeg: true }).toFile(outputPath);
+  } catch (error) {
+    if (error instanceof AppError) {
+      throw error;
+    }
+
+    throw new AppError("File corrupted", "FILE_CORRUPTED", 400, {
+      reason: parseReason(error),
+    });
+  }
 }
 
 export async function convertImageToFormat({

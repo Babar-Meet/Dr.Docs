@@ -4,9 +4,10 @@ import express from "express";
 import cors from "cors";
 import fs from "fs-extra";
 import filesRouter from "./routes/files.js";
-import { ensureRuntimeDirectories, PORT } from "./config.js";
+import { ensureRuntimeDirectories, LIBREOFFICE_BIN, PORT } from "./config.js";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
 import { startDownloadCleanupScheduler } from "./services/downloadStore.js";
+import { warmUpLibreOfficeProfile } from "../../utils/helpers/libreOfficeProfile.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -65,4 +66,17 @@ startDownloadCleanupScheduler();
 
 app.listen(PORT, () => {
   console.log(`Dr.Docs API listening on port ${PORT}`);
+
+  // Warm one LibreOffice profile slot only after the server accepts requests, so startup and
+  // the first responses are never delayed by it. Silent when soffice is missing or the temp
+  // directory cannot be written; the warm-up then simply does nothing.
+  void warmUpLibreOfficeProfile(LIBREOFFICE_BIN)
+    .then((warmed) => {
+      if (warmed) {
+        console.log("LibreOffice profile warm-up complete");
+      }
+    })
+    .catch(() => {
+      // Best effort by contract: a warm-up failure must never reach the process.
+    });
 });

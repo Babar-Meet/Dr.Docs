@@ -2,6 +2,7 @@ import path from "node:path";
 import fs from "fs-extra";
 import { AppError } from "../errors.js";
 import { runCommand } from "../helpers/command.js";
+import { withLibreOfficeProfile } from "../helpers/libreOfficeProfile.js";
 
 function parseReason(error) {
   return [error?.stderr, error?.stdout, error?.message]
@@ -23,17 +24,22 @@ export async function convertWithLibreOffice({
   await fs.ensureDir(outputDir);
 
   try {
-    await runCommand(
-      libreOfficeBin,
-      [
-        "--headless",
-        "--convert-to",
-        normalizedTarget,
-        "--outdir",
-        outputDir,
-        inputPath,
-      ],
-      { timeoutMs: 240000 },
+    // Each conversion runs with its own LibreOffice user profile, so two conversions
+    // started at the same time cannot collide inside one shared profile.
+    await withLibreOfficeProfile(({ profileArgs }) =>
+      runCommand(
+        libreOfficeBin,
+        [
+          ...profileArgs,
+          "--headless",
+          "--convert-to",
+          normalizedTarget,
+          "--outdir",
+          outputDir,
+          inputPath,
+        ],
+        { timeoutMs: 240000 },
+      ),
     );
   } catch (error) {
     throw new AppError("Processing failed", "PROCESSING_FAILED", 500, {

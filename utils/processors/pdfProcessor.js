@@ -19,6 +19,15 @@ function toReason(error) {
     .join(" ");
 }
 
+async function hasRepairedOutput(outputPath) {
+  if (!(await fs.pathExists(outputPath))) {
+    return false;
+  }
+
+  const stats = await fs.stat(outputPath);
+  return stats.size > 0;
+}
+
 async function ensurePdfNotEncryptedOrCorrupt(inputPath) {
   try {
     const buffer = await fs.readFile(inputPath);
@@ -107,8 +116,24 @@ export async function repairPdf({ inputPath, outputPath, qpdfBin }) {
       timeoutMs: 120000,
     });
   } catch (error) {
+    const reason = toReason(error);
+
+    // qpdf exits 3 when it repaired the file but issued warnings, and it still
+    // writes the repaired output. That is a successful repair, not corruption.
+    if (error?.exitCode === 3 && (await hasRepairedOutput(outputPath))) {
+      return;
+    }
+
+    // qpdf refuses a password-protected PDF with "invalid password" and writes
+    // no output. Report the password, never corruption, as unlock does.
+    if (isPdfPasswordError(reason)) {
+      throw new AppError(SECURE_ENCRYPTION_MESSAGE, "PASSWORD_REQUIRED", 400, {
+        reason: "Password required",
+      });
+    }
+
     throw new AppError("File corrupted", "FILE_CORRUPTED", 400, {
-      reason: toReason(error) || "qpdf could not repair this PDF",
+      reason: reason || "qpdf could not repair this PDF",
     });
   }
 }

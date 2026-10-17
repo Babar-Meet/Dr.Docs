@@ -57,4 +57,5 @@ export const OPERATION_MODES = new Set([
   "ocr",
   "rotate",
   "compress",
+  "repair",
 ]);
