@@ -47,14 +47,14 @@ export default function Header() {
           <Link
             to="/"
             aria-label="Dr.Docs home"
-            className="flex items-center gap-3 rounded-[5px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange"
+            className="flex items-center gap-2.5 rounded-[5px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange"
           >
-            <div className="flex h-8 w-8 items-center justify-center rounded-[5px] bg-orange text-sm font-bold text-black">
+            <div className="flex h-9 w-9 items-center justify-center rounded-[6px] bg-orange text-[19px] font-bold leading-none text-black">
               D
             </div>
-            <p className="font-display text-[15px] font-bold leading-none tracking-tight text-content">
+            <span className="font-display text-[19px] font-bold leading-none tracking-tight text-content">
               Dr.Docs
-            </p>
+            </span>
           </Link>
         </div>
 
