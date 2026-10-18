@@ -23,6 +23,7 @@ function ToolRuntime({ tool }) {
     "merge",
     "split",
     "rotate",
+    "protect",
   ].includes(tool.operation);
 
   return (

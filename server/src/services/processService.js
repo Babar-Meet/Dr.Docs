@@ -61,6 +61,7 @@ export async function processUploadedFile(uploadedFile, options = {}) {
       pageRanges: options.pageRanges,
       rotationAngle: options.rotationAngle,
       pages: options.pages,
+      password: options.password,
       inputFiles: normalizedInputFiles.map((file) => ({
         path: file.path,
         originalName: file.originalname,

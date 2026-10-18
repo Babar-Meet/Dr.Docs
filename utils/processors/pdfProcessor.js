@@ -110,6 +110,54 @@ export async function optimizePdf(args) {
   return compressPdf(args);
 }
 
+// Protect adds AES 256 password encryption through qpdf. The user password
+// and owner password are set to the same value: opening and changing the file
+// both require it. This creates protection; no existing protection is ever
+// inspected or bypassed, and an already encrypted input is refused up front.
+export async function protectPdf({ inputPath, outputPath, password, qpdfBin }) {
+  if (!String(password || "").trim()) {
+    throw new AppError(
+      "Password is required to protect the PDF.",
+      "PROCESSING_FAILED",
+      400,
+      { reason: "Missing password" },
+    );
+  }
+
+  await ensurePdfNotEncryptedOrCorrupt(inputPath);
+  await fs.ensureDir(path.dirname(outputPath));
+  try {
+    await runCommand(
+      qpdfBin,
+      [
+        "--encrypt",
+        String(password),
+        String(password),
+        "256",
+        "--",
+        inputPath,
+        outputPath,
+      ],
+      { timeoutMs: 120000 },
+    );
+  } catch (error) {
+    const reason = toReason(error);
+    if (isPdfPasswordError(reason)) {
+      throw new AppError(SECURE_ENCRYPTION_MESSAGE, "PASSWORD_REQUIRED", 400, {
+        reason: "Password required",
+      });
+    }
+    if (/damaged|unable to|invalid/i.test(reason)) {
+      throw new AppError("File corrupted", "FILE_CORRUPTED", 400, {
+        reason,
+      });
+    }
+    throw new AppError("Processing failed", "PROCESSING_FAILED", 500, {
+      reason: reason || "qpdf failed while adding password protection",
+    });
+  }
+}
+
 export async function repairPdf({ inputPath, outputPath, qpdfBin }) {
   try {
     await runCommand(qpdfBin, ["--linearize", inputPath, outputPath], {

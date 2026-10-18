@@ -84,7 +84,7 @@ export const TOOL_SENTENCES = {
   "watermark-pdf": "Not built yet: stamp text or an image over PDF pages.",
   "rotate-pdf": "Rotate all pages or a page selection of a PDF.",
   "unlock-pdf": "Remove edit and copy restrictions from a PDF.",
-  "protect-pdf": "Not built yet: add a password to a PDF.",
+  "protect-pdf": "Add a password with 256-bit AES encryption.",
   "organize-pdf": "Not built yet: reorder and delete pages of one PDF.",
   "pdf-to-pdfa": "Not built yet: rewrite a PDF into the PDF/A archive format.",
   "repair-pdf": "Rebuild a damaged file and keep its original format.",

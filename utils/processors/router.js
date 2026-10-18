@@ -29,6 +29,7 @@ import {
 } from "./conversionProcessor.js";
 import {
   compressPdf,
+  protectPdf,
   repairPdf,
   unlockPdfRestrictions,
 } from "./pdfProcessor.js";
@@ -316,6 +317,7 @@ export async function processFile({
   pageRanges,
   rotationAngle,
   pages,
+  password,
   inputFiles = [],
   outputBasePath,
   workDir,
@@ -472,6 +474,49 @@ export async function processFile({
     }
     return {
       message: `Compressed ${outputs.length} PDF(s) (lossless optimize).`,
+      outputs,
+    };
+  }
+
+  if (normalizedOperation === "protect") {
+    const protectedPassword = String(password || "");
+    if (!protectedPassword.trim()) {
+      throw unsupportedFile("Enter a password to protect the PDF.");
+    }
+    const outputs = [];
+    for (let index = 0; index < files.length; index += 1) {
+      const file = files[index];
+      const fileType = detectFileType(file.originalName, file.mimeType);
+      if (!fileType || fileType.extension !== ".pdf") {
+        throw unsupportedFile("Protect supports PDF files only.");
+      }
+      const perFileBase = createPerFileOutputBase(
+        outputBasePath,
+        index,
+        file.originalName,
+      );
+      const outputPath = createOutputPath(perFileBase, ".pdf");
+      await protectPdf({
+        inputPath: file.path,
+        outputPath,
+        password: protectedPassword,
+        qpdfBin,
+      });
+      await ensureOutputExists(outputPath);
+      const base = sanitizeBaseName(path.parse(file.originalName).name);
+      outputs.push(
+        createDescriptor({
+          outputPath,
+          outputExtension: ".pdf",
+          sourceName: file.originalName,
+          outputName: `${base}_protected.pdf`,
+          detectedType: "PDF",
+          message: "PDF password protected successfully.",
+        }),
+      );
+    }
+    return {
+      message: `Protected ${outputs.length} PDF(s) with a password.`,
       outputs,
     };
   }

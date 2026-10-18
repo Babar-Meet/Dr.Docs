@@ -23,6 +23,7 @@ router.post("/process", processUploadMiddleware, async (req, res, next) => {
     const pageRanges = req.body.pageRanges || "";
     const rotationAngle = req.body.rotationAngle || "90";
     const pages = req.body.pages || "all";
+    const password = req.body.password || "";
 
     const groupedFiles = req.files || {};
     const inputFiles = [
@@ -38,6 +39,7 @@ router.post("/process", processUploadMiddleware, async (req, res, next) => {
         pageRanges,
         rotationAngle,
         pages,
+        password,
         inputFiles,
       }),
     );

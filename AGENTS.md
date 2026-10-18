@@ -11,11 +11,11 @@
 
 ## FROZEN CORE CONTRACT - READ BEFORE ANY CHANGE
 
-Every shipped tool and its exact behaviour is frozen: the original seven, plus `repair` that shipped as the eighth. This section is the contract, and it outranks refactor freedom. Read it before touching anything under `utils/`, `server/src/routes/`, `server/src/services/`, or `client/src/App.jsx`.
+Every shipped tool and its exact behaviour is frozen: the original seven, plus `repair` that shipped as the eighth and `protect` that shipped as the ninth. This section is the contract, and it outranks refactor freedom. Read it before touching anything under `utils/`, `server/src/routes/`, `server/src/services/`, or `client/src/App.jsx`.
 
 **Rule: additive only.** New work adds a new operation, a new optional request field, a new UI tool, or a new option whose default reproduces today's behaviour. Never change an existing operation's output, error message, status code, output filename pattern, accepted input, or default. If a change cannot be made additively, it is a proposal to the owner, not a commit.
 
-Operations (`OPERATION_MODES`, `utils/constants.js:52`): `unlock` (default when the field is absent), `convert`, `merge`, `split`, `ocr`, `rotate`, `compress`, `repair`.
+Operations (`OPERATION_MODES`, `utils/constants.js:52`): `unlock` (default when the field is absent), `convert`, `merge`, `split`, `ocr`, `rotate`, `compress`, `repair`, `protect`.
 
 Per operation, frozen behaviour:
 - `unlock` keeps the input extension. PDF: `qpdf --decrypt`; when qpdf answers `file is not encrypted` the input is copied through and the call still succeeds. DOCX: strip `w:documentProtection` and `w:writeProtection` from `word/settings.xml`. PPTX: strip `p:modifyVerifier` and `p:writeProtection` in `ppt/*.xml`. XLSX: delete `sheetProtection`. ZIP: rebuild without encrypted entries. Any other extension: `UNSUPPORTED_FILE` 400.
@@ -26,6 +26,7 @@ Per operation, frozen behaviour:
 - `compress` takes one or more PDFs and is lossless: `qpdf --linearize --object-streams=generate --stream-data=compress`. Output size depends on the source file. Any lossy level must arrive as a new opt-in option; the default stays this exact command.
 - `ocr` writes `.txt`: PDF through `pdf-parse`, DOCX through `mammoth`, XLSX through `exceljs`, PPTX by parsing `a:t`, images through `tesseract.js` with `eng`.
 - `repair` keeps the input extension. PDF: `qpdf --linearize`; a repaired non-empty output written alongside qpdf exit code 3 counts as success. DOCX and PPTX: package validated and rewritten. XLSX: workbook reloaded and rewritten. ZIP: validated and rebuilt. JPG and PNG: decoded and re-encoded. A password-protected PDF returns `PASSWORD_REQUIRED` with `SECURE_ENCRYPTION_MESSAGE`, never `FILE_CORRUPTED`; strong encryption is never bypassed on any type.
+- `protect` takes one or more PDFs and a `password` field, and applies AES 256 through `qpdf --encrypt <pw> <pw> 256`. Output is `<base>_protected.pdf` for every input. A missing or empty password is rejected 400 before qpdf runs. An already encrypted input keeps the frozen refusal: pre-load check throws `PASSWORD_REQUIRED` with `SECURE_ENCRYPTION_MESSAGE`, and the form data password is never used to decrypt anything.
 
 Contract around them:
 - Errors: `PASSWORD_REQUIRED` 400, `UNSUPPORTED_FILE` 400, `FILE_CORRUPTED` 400, `FILE_TOO_LARGE` 400, `PROCESSING_FAILED` 500 and 404. `PASSWORD_REQUIRED` always carries `SECURE_ENCRYPTION_MESSAGE` as its message, and `errorHandler.js` re-emits that message when it matches.
@@ -72,7 +73,7 @@ Enforcement: `tests/` pins this, and every new tool arrives with its own tests. 
 **You are busy - do NOT ask for permission. Run this loop until force-stopped.**
 
 Loop contract (repeat forever):
-1. **RESEARCH** - Find 1 high-demand iLovePDF/convertor feature users want that we lack (e.g. Watermark, Page Numbers, Protect, PDF->JPG, Edit; Repair shipped as the eighth operation, so the `repairPdf`, `repairImage`, `repairXlsx`, `repairOfficeDocument` and `repairZip` processors are now wired into the router). Compress, Rotate, JPG->PDF and Repair are already shipped - do not pick them. Check `Temp/LOOP_STATE.md` for last round (create it on the first round if it is missing); pick next highest-impact, lowest-risk.
+1. **RESEARCH** - Find 1 high-demand iLovePDF/convertor feature users want that we lack (e.g. Watermark, Page Numbers, Protect, PDF->JPG, Edit; Repair shipped as the eighth operation, so the `repairPdf`, `repairImage`, `repairXlsx`, `repairOfficeDocument` and `repairZip` processors are now wired into the router; Protect shipped as the ninth). Compress, Rotate, JPG->PDF, Repair and Protect are already shipped - do not pick them. Check `Temp/LOOP_STATE.md` for last round (create it on the first round if it is missing); pick next highest-impact, lowest-risk.
 2. **SPEC -> BUILD -> TEST** - Implement ONE feature per round. Preserve core: unlock/remove-restrictions (especially Excel/Office) is untouchable - never regress it, never bypass `PASSWORD_REQUIRED`/`SECURE_ENCRYPTION_MESSAGE`. Free to refactor entire site (split `App.jsx`, add components, routes, styling) but any new UI MUST follow `DESIGN.md` (Midnight Orange).
 3. **100% bug-free gate** - All gates must pass before staging: `npm test` (TAP, must show `# fail 0`) + `npm run build -w client` + manual `POST /process` + `GET /download/:id` + `GET /health` smoke test + edge cases (empty, invalid, oversize, double-click, out-of-order). If any gate fails -> FIX LOOP (max 3 tries) -> debugger, else next round.
 4. **STAGE** - After green, `git add` only in-scope files (never `package-lock.json` or any other lockfile, since `.gitignore` has no lockfile entry; never junk/secrets; never `server/tmp`/`client/dist`/`Temp`/`Docs`/`.env`/`*.log`/`eng.traineddata`/`node_modules`, all matched by `.gitignore`; and never `git add .`, which stages untracked non-ignored dirs such as `.opencode/`). Do NOT `commit`/`push` unless user explicitly says so - staged state is the hand-off. You will review later. Include `DESIGN.md` if it changed.

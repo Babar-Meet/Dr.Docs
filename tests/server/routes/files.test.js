@@ -151,6 +151,54 @@ describe("routes/files validation POST /process", () => {
     });
   });
 
+  describe("protect operation end to end", () => {
+    let pdfPath;
+    before(async () => {
+      pdfPath = path.join(TMP_ROOT, "protect-roundtrip.pdf");
+      const { PDFDocument } = await import("pdf-lib");
+      const doc = await PDFDocument.create();
+      doc.addPage([300, 300]);
+      await fs.writeFile(pdfPath, await doc.save());
+    });
+
+    it("returns a protected PDF that pdf-lib refuses without the password", async () => {
+      const { status, body } = await postProcess({
+        fields: { operation: "protect", password: "route-pass-123" },
+        files: [{ fieldName: "files", filePath: pdfPath, fileName: "protect-me.pdf", mimeType: "application/pdf" }],
+      });
+      assert.equal(status, 200);
+      assert.equal(body.status, "success");
+      assert.ok(body.results.length >= 1);
+      assert.match(body.results[0].downloadName, /_protected\.pdf$/);
+
+      const download = await fetch(`${baseUrl}${body.results[0].downloadUrl}`);
+      assert.equal(download.status, 200);
+      const bytes = Buffer.from(await download.arrayBuffer());
+      const { PDFDocument } = await import("pdf-lib");
+      await assert.rejects(async () => PDFDocument.load(bytes));
+    });
+
+    it("returns 400 when the password field is missing", async () => {
+      const { status, body } = await postProcess({
+        fields: { operation: "protect" },
+        files: [{ fieldName: "files", filePath: pdfPath, fileName: "protect-me.pdf", mimeType: "application/pdf" }],
+      });
+      assert.equal(status, 400);
+      assert.match(String(body.reason || body.message || ""), /password/i);
+    });
+
+    it("returns 400 when a non-PDF is sent to protect", async () => {
+      const txtPath = path.join(TMP_ROOT, "protect.txt");
+      await fs.writeFile(txtPath, "plain text");
+      const { status, body } = await postProcess({
+        fields: { operation: "protect", password: "route-pass-123" },
+        files: [{ fieldName: "files", filePath: txtPath, fileName: "protect.txt", mimeType: "text/plain" }],
+      });
+      assert.equal(status, 400);
+      assert.equal(body.code, "UNSUPPORTED_FILE");
+    });
+  });
+
   describe("unsupported file type via upload filter", () => {
     it("returns 400 when uploading .txt (unsupported extension)", async () => {
       const txtPath = path.join(TMP_ROOT, "notes.txt");

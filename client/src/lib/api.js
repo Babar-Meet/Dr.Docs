@@ -11,6 +11,7 @@ export async function submitProcess({
   pageRanges = "",
   rotationAngle = "90",
   pages = "all",
+  password = "",
 }) {
   const formData = new FormData();
   formData.append("operation", operation);
@@ -26,6 +27,10 @@ export async function submitProcess({
   if (operation === "rotate") {
     formData.append("rotationAngle", String(rotationAngle));
     formData.append("pages", pages.trim() || "all");
+  }
+
+  if (operation === "protect") {
+    formData.append("password", password);
   }
 
   files.forEach((file) => {

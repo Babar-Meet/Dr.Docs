@@ -2,6 +2,7 @@ import ConvertOptions from "./ConvertOptions.jsx";
 import MergeOptions from "./MergeOptions.jsx";
 import SplitOptions from "./SplitOptions.jsx";
 import RotateOptions from "./RotateOptions.jsx";
+import ProtectOptions from "./ProtectOptions.jsx";
 
 // ToolRecord.kind is "info" for compress, unlock, ocr and repair; those tools
 // have no selectable options, so they render no panel here. Their per-engine
@@ -56,6 +57,15 @@ export default function OptionsPanel({
         pages={state.pages}
         setPages={state.setPages}
         pdfPages={singlePdfPages}
+      />
+    );
+  }
+
+  if (resolvedKind === "protect") {
+    return (
+      <ProtectOptions
+        password={state.password}
+        setPassword={state.setPassword}
       />
     );
   }

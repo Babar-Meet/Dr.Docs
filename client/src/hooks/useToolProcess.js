@@ -38,6 +38,7 @@ export default function useToolProcess(tool) {
   const [pageRanges, setPageRanges] = useState("");
   const [rotationAngle, setRotationAngle] = useState("90");
   const [pages, setPages] = useState("all");
+  const [password, setPassword] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [status, setStatus] = useState(null);
 
@@ -304,6 +305,23 @@ export default function useToolProcess(tool) {
       }
     }
 
+    if (tool.operation === "protect") {
+      const allPdf = selectedFiles.every(
+        (file) => getExtension(file.name) === ".pdf",
+      );
+      if (!allPdf) {
+        setFailure("Unsupported file", "Protect supports PDF files only.");
+        return;
+      }
+      if (!password.trim()) {
+        setFailure(
+          "Unsupported file",
+          "Enter a password to protect the PDF.",
+        );
+        return;
+      }
+    }
+
     setIsProcessing(true);
     setStatus(null);
 
@@ -315,6 +333,7 @@ export default function useToolProcess(tool) {
         pageRanges,
         rotationAngle,
         pages,
+        password: password.trim() || "",
       });
 
       if (!ok) {
@@ -368,13 +387,18 @@ export default function useToolProcess(tool) {
     setRotationAngle,
     pages,
     setPages,
+    password,
+    setPassword,
     isProcessing,
     status,
     operation: tool.operation,
     targetFormatLocked,
     convertTargetOptions,
     canSubmit:
-      selectedFiles.length > 0 && rejectedCount === 0 && !isProcessing,
+      selectedFiles.length > 0 &&
+      rejectedCount === 0 &&
+      !isProcessing &&
+      (tool.operation !== "protect" || password.trim() !== ""),
     onPickFiles,
     onDrop,
     onDragOver,

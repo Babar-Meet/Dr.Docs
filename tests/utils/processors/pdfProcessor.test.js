@@ -6,7 +6,8 @@ import fs from "fs-extra";
 import { fileURLToPath } from "node:url";
 import { AppError } from "../../../utils/errors.js";
 import { SECURE_ENCRYPTION_MESSAGE } from "../../../utils/constants.js";
-import { unlockPdfRestrictions, compressPdf } from "../../../utils/processors/pdfProcessor.js";
+import { runCommand } from "../../../utils/helpers/command.js";
+import { unlockPdfRestrictions, compressPdf, protectPdf } from "../../../utils/processors/pdfProcessor.js";
 
 const DOCS_LOCKED_ENC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../Docs/pdf/locked/enc.pdf");
 const DOCS_LOCKED_CORRUPT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../Docs/pdf/locked/corrupt.pdf");
@@ -112,6 +113,92 @@ describe("pdfProcessor security boundary", () => {
       await assert.rejects(
         () => compressPdf({ inputPath: bad, outputPath: out, qpdfBin: QPDF_BIN }),
         (err) => err.code === "FILE_CORRUPTED"
+      );
+    });
+  });
+
+  describe("protectPdf", () => {
+    const PASSWORD = "probe-pass-123";
+
+    it("protects a valid PDF with AES 256 and the password opens it", async () => {
+      const work = path.join(TMP_ROOT, "protect-valid");
+      await fs.ensureDir(work);
+      const input = await makeValidPdf(work, "plain.pdf", 2);
+      const out = path.join(work, "out.pdf");
+
+      await assert.doesNotReject(() =>
+        protectPdf({ inputPath: input, outputPath: out, password: PASSWORD, qpdfBin: QPDF_BIN })
+      );
+      assert.ok(await fs.pathExists(out));
+      const stat = await fs.stat(out);
+      assert.ok(stat.size > 0);
+
+      // A PDF reader without the password must be refused.
+      const { PDFDocument: PdfDoc } = await import("pdf-lib");
+      await assert.rejects(async () => PdfDoc.load(await fs.readFile(out)));
+
+      // qpdf must report strong encryption (R = 6 / AES-256) for the output.
+      const probing = await runCommand(QPDF_BIN, ["--show-encryption", out], {
+        timeoutMs: 60000,
+      });
+      assert.match(probing.stdout, /R = 6|AES-256/i);
+
+      // The exact password must open it.
+      const withPassword = await runCommand(
+        QPDF_BIN,
+        ["--show-encryption", `--password=${PASSWORD}`, out],
+        { timeoutMs: 60000 },
+      );
+      assert.ok(withPassword.exitCode === 0);
+
+      // Decryption with the same password restores the original page count.
+      const decrypted = path.join(work, "decrypted.pdf");
+      await runCommand(
+        QPDF_BIN,
+        ["--decrypt", `--password=${PASSWORD}`, out, decrypted],
+        { timeoutMs: 120000 },
+      );
+      const doc = await PdfDoc.load(await fs.readFile(decrypted));
+      assert.equal(doc.getPageCount(), 2);
+    });
+
+    it("throws PROCESSING_FAILED 400 when the password is empty", async () => {
+      const work = path.join(TMP_ROOT, "protect-empty");
+      await fs.ensureDir(work);
+      const input = await makeValidPdf(work, "plain.pdf");
+      const out = path.join(work, "out.pdf");
+      await assert.rejects(
+        () => protectPdf({ inputPath: input, outputPath: out, password: "   ", qpdfBin: QPDF_BIN }),
+        (err) => {
+          assert.ok(err instanceof AppError);
+          assert.equal(err.code, "PROCESSING_FAILED");
+          assert.equal(err.statusCode, 400);
+          assert.match(err.message, /password is required/i);
+          return true;
+        }
+      );
+    });
+
+    it("throws PASSWORD_REQUIRED with SECURE_ENCRYPTION_MESSAGE for an already encrypted input", async () => {
+      const work = path.join(TMP_ROOT, "protect-already-enc");
+      await fs.ensureDir(work);
+      const input = await makeValidPdf(work, "plain.pdf");
+      const preEncrypted = path.join(work, "already.pdf");
+      await runCommand(
+        QPDF_BIN,
+        ["--encrypt", "oldpass", "oldpass", "256", "--", input, preEncrypted],
+        { timeoutMs: 120000 }
+      );
+      const out = path.join(work, "out.pdf");
+      await assert.rejects(
+        () => protectPdf({ inputPath: preEncrypted, outputPath: out, password: PASSWORD, qpdfBin: QPDF_BIN }),
+        (err) => {
+          assert.ok(err instanceof AppError);
+          assert.equal(err.code, "PASSWORD_REQUIRED");
+          assert.equal(err.statusCode, 400);
+          assert.equal(err.message, SECURE_ENCRYPTION_MESSAGE);
+          return true;
+        }
       );
     });
   });
