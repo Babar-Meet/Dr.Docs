@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { ArrowRight } from "lucide-react";
 import StatusChip from "../components/ui/StatusChip";
 import { buildConversionSections } from "../lib/conversionsHub";
 
@@ -10,18 +11,23 @@ function ExtensionChip({ text }) {
   );
 }
 
-function TileRow({ tile, muted }) {
+function FormatBadge({ text, color }) {
   return (
-    <div className="flex items-center justify-between gap-2">
-      <span
-        className={
-          "truncate font-display text-[14px] font-bold leading-tight " +
-          (muted ? "text-muted" : "text-content")
-        }
-      >
-        {tile.label}
-      </span>
-      <ExtensionChip text={tile.extension} />
+    <span
+      className="inline-flex h-6 min-w-8 items-center justify-center whitespace-nowrap rounded-[4px] px-1.5 font-mono text-[10px] font-bold uppercase leading-none text-white"
+      style={{ backgroundColor: color }}
+    >
+      {text}
+    </span>
+  );
+}
+
+function TileBadges({ tile }) {
+  return (
+    <div className="flex items-center gap-1.5" aria-hidden="true">
+      <FormatBadge text={tile.sourceText} color={tile.sourceColor} />
+      <ArrowRight size={14} strokeWidth={2} className="shrink-0 text-muted" />
+      <FormatBadge text={tile.targetText} color={tile.targetColor} />
     </div>
   );
 }
@@ -35,9 +41,14 @@ function ConversionTile({ tile }) {
           title="Coming soon"
           className="flex h-full cursor-not-allowed flex-col gap-1.5 rounded-[6px] border border-borderDark bg-deep p-3.5"
         >
-          <TileRow tile={tile} muted />
+          <TileBadges tile={tile} />
+          <span className="font-display text-[15px] font-bold leading-tight text-muted">
+            {tile.label}
+          </span>
           <p className="font-body text-[12px] leading-normal text-muted">{tile.note}</p>
-          <StatusChip>Coming soon</StatusChip>
+          <span className="mt-auto pt-1">
+            <StatusChip>Coming soon</StatusChip>
+          </span>
         </div>
       </li>
     );
@@ -47,9 +58,12 @@ function ConversionTile({ tile }) {
     <li>
       <Link
         to={tile.href}
-        className="flex h-full flex-col gap-1.5 rounded-[6px] border border-borderDark bg-panel p-3.5 transition hover:border-borderStrong hover:bg-elevated"
+        className="group flex h-full flex-col gap-1.5 rounded-[6px] border border-borderDark bg-panel p-3.5 transition hover:border-borderStrong hover:bg-elevated"
       >
-        <TileRow tile={tile} />
+        <TileBadges tile={tile} />
+        <span className="font-display text-[15px] font-bold leading-tight text-content">
+          {tile.label}
+        </span>
         <p className="font-body text-[12px] leading-normal text-muted">{tile.note}</p>
       </Link>
     </li>

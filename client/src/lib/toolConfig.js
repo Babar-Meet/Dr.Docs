@@ -585,24 +585,8 @@ export const TOOLS = [
   },
 ];
 
-// The generic convert hub is not an iLovePDF tile, so it is not in TOOLS.
-export const GENERIC_CONVERT = {
-  id: "convert-pdf",
-  label: "Convert",
-  slug: "convert-pdf",
-  group: "convert",
-  icon: WandSparkles,
-  available: true,
-  operation: "convert",
-  help: "Convert many files at once",
-  detail:
-    "Batch convert supports Office and image workflows, including PDF to DOCX/PPTX/XLSX where supported by LibreOffice.",
-  kind: "convert",
-  sourceExtensions: null,
-  targetFormat: null,
-  multiple: true,
-  accept: "",
-};
+// There is no generic convert page: every live pair opens its own screen
+// (/convert/<source>-to-<target>), so no target picker exists anywhere.
 
 // The Conversions page (/convert) groups every pair by source format. Not a
 // tool page: it sits in the header menu as an entry point for the page. The

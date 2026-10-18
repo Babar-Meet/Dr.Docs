@@ -19,7 +19,7 @@ export const TAG_LABELS = {
   workflows: "Workflows",
   organize: "Organize PDF",
   optimize: "Optimize PDF",
-  convert: "Convert PDF",
+  convert: "Convert Any To Any",
   edit: "Edit PDF",
   security: "PDF Security",
   intelligence: "PDF Intelligence",

@@ -3,8 +3,9 @@ import { ThemeProvider } from "./theme/ThemeProvider.jsx";
 import SiteLayout from "./layouts/SiteLayout.jsx";
 import LandingPage from "./pages/LandingPage.jsx";
 import ConversionsPage from "./pages/ConversionsPage.jsx";
+import ConvertPairPage from "./pages/ConvertPairPage.jsx";
 import ToolPage from "./pages/ToolPage.jsx";
-import { GENERIC_CONVERT, liveTools } from "./lib/toolConfig";
+import { liveTools } from "./lib/toolConfig";
 
 // One route per available tool, generated from the data. Unavailable tools get
 // no route at all: a typed slug for one falls through to the catch-all.
@@ -21,7 +22,13 @@ export default function App() {
               show Coming soon. The convert hub is not a TOOLS row either, so
               both register explicitly. */}
           <Route path="/convert" element={<ConversionsPage />} />
-          <Route path="/convert-pdf" element={<ToolPage tool={GENERIC_CONVERT} />} />
+          {/* Every live pair without a dedicated tool page opens its own
+              screen: the title and badges carry the pair, the target is
+              locked, and no format picker exists. Unknown pair slugs fall
+              back to the hub. The old /convert-pdf generic page is gone, so
+              its URL points at the hub. */}
+          <Route path="/convert/:pair" element={<ConvertPairPage />} />
+          <Route path="/convert-pdf" element={<Navigate to="/convert" replace />} />
           {availableTools.map((tool) => (
             <Route
               key={tool.slug}

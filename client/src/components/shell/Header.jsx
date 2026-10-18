@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ChevronDown, Search } from "lucide-react";
 import ThemeToggle from "./ThemeToggle.jsx";
-import { GENERIC_CONVERT, CONVERSIONS_HUB, GROUP_ORDER, TOOL_GROUPS, TOOLS } from "../../lib/toolConfig";
+import { CONVERSIONS_HUB, GROUP_ORDER, TOOL_GROUPS, TOOLS } from "../../lib/toolConfig";
 
 // One grouped menu with every tool, mirroring the reference product's header:
 // brand on the left, a tools picker, theme toggle on the right. The header
@@ -76,10 +76,10 @@ export default function Header() {
   const grouped = GROUP_ORDER.map((group) => {
     const items = TOOLS.filter((tool) => tool.group === group);
     if (group === "convert") {
-      // The Conversions page entry leads the convert group, then the generic
-      // batch converter, then the dedicated pairs.
+      // The Conversions page entry leads the convert group, then the
+      // dedicated pairs. There is no generic converter page: every pair
+      // opens its own screen.
       items.unshift(CONVERSIONS_HUB);
-      items.push(GENERIC_CONVERT);
     }
     return { group, items };
   }).filter((entry) => entry.items.length > 0);

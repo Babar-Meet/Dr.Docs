@@ -752,6 +752,27 @@ Mobile layouts should collapse into 1-2 columns.
 
 ---
 
+## File-Type Badges
+
+Sanctioned exception to brand-neutrality by owner request: conversion tiles on the
+Conversions page show standard file-type badges - the format name in white mono
+letters on its conventional color, the same coding every file manager uses. The
+actual Adobe and Microsoft logo artwork stays out: rule 12 above still stands,
+and those marks are trademarked. The badge colors are fixed format colors, not
+theme tokens, so they are byte-identical in both themes:
+
+- PDF and PDF/A `#D13438`, Word family (DOC, DOCX, ODT, RTF) `#2B579A`,
+  spreadsheets (XLS, XLSX, ODS, CSV) `#217346`, slides (PPT, PPTX, ODP) `#D24726`,
+  images (JPG, PNG, WebP, AVIF, TIFF) `#8E44AD`, plain text `#6B7280`,
+  HTML `#E44D26`, ePub `#0D9488`.
+
+Single source: `FORMAT_COLORS` in `client/src/lib/conversionsHub.js`, rendered by
+the `FormatBadge` component in `client/src/pages/ConversionsPage.jsx`. White badge
+text is theme-independent on purpose and is not the banned raw `text-white` for
+surrounding component text.
+
+---
+
 ## Theme Toggle
 
 Dr.Docs ships Midnight Orange as default but allows user choice. Orange (#FF9900) stays the signature action in every theme: `--orange`, `--orangeDark` (#E67E00) and `--orangeSoft` (#FFB84D) are byte-identical in both blocks. The other 22 of the 25 variables in `client/src/index.css` differ between Midnight and Total White: 6 surfaces and borders (`--ink`, `--deep`, `--panel`, `--elevated`, `--borderDark`, `--borderStrong`), 4 text variables (`--offWhite`, `--muted`, `--textPrimary`, `--textInk`) and all 12 semantic status variables (`--success`, `--warning`, `--error`, `--info` and their `Bg` and `Text` companions). Those three orange variables are the only theme-invariant ones. Keep it simple - two options.

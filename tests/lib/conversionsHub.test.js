@@ -7,6 +7,8 @@ import { CONVERSION_TARGETS as CLIENT_MIRROR } from "../../client/src/lib/conver
 import {
   FORMAT_LABELS,
   SECTION_SOURCES,
+  FORMAT_COLORS,
+  findPairTool,
   buildConversionSections,
 } from "../../client/src/lib/conversionsHub.js";
 import { TOOLS } from "../../client/src/lib/toolConfig.js";
@@ -35,9 +37,6 @@ describe("conversions hub data", () => {
 
     it("every live tile targets a real mirror conversion with a real page", () => {
       const liveSlugs = new Set(TOOLS.filter((tool) => tool.available).map((tool) => tool.slug));
-      // GENERIC_CONVERT lives outside TOOLS: its /convert-pdf page accepts
-      // every live pair that has no dedicated tool page.
-      liveSlugs.add("convert-pdf");
       for (const section of sections) {
         assert.ok(section.liveCount > 0, `${section.heading} has no live tile`);
         for (const tile of section.tiles) {
@@ -51,11 +50,57 @@ describe("conversions hub data", () => {
               normalized.some((key) => mirrorTargets.includes(key)),
               `tile ${tile.id} has no mirror conversion`,
             );
-            assert.ok(liveSlugs.has(tile.href.slice(1)), `tile ${tile.id} links to a dead page`);
+            if (tile.href.startsWith("/convert/")) {
+              assert.equal(
+                tile.href,
+                `/convert/${section.key}-to-${tile.targetKey}`,
+                `tile ${tile.id} has a malformed pair page link`,
+              );
+            } else {
+              assert.ok(liveSlugs.has(tile.href.slice(1)), `tile ${tile.id} links to a dead page`);
+            }
           } else {
             assert.equal(tile.href, null);
-            assert.ok(tile.note.startsWith("Not built yet"));
+            assert.ok(tile.note.includes("Not built yet"));
           }
+        }
+      }
+    });
+
+    it("tile labels show the conversion direction", () => {
+      for (const section of sections) {
+        for (const tile of section.tiles) {
+          const targetLabel = FORMAT_LABELS[tile.targetKey];
+          assert.equal(tile.label, `${section.sourceLabel} -> ${targetLabel}`);
+        }
+      }
+    });
+
+    it("descriptions name both extensions", () => {
+      for (const section of sections) {
+        const sourceExt = `.${section.key}`;
+        for (const tile of section.tiles) {
+          if (tile.implemented) {
+            assert.ok(
+              tile.note.startsWith(`Convert ${sourceExt} files to ${tile.extension}`),
+              `${tile.id} note does not name both extensions: ${tile.note}`,
+            );
+          }
+        }
+      }
+    });
+
+    it("every tile carries colored source and target badges", () => {
+      for (const section of sections) {
+        for (const tile of section.tiles) {
+          assert.equal(tile.sourceText, section.badge, `${tile.id} wrong source badge`);
+          assert.ok(tile.sourceColor, `${tile.id} has no source color`);
+          assert.ok(tile.targetColor, `${tile.id} has no target color`);
+          assert.equal(
+            tile.targetText,
+            tile.extension.replace(".", "").toUpperCase(),
+            `${tile.id} wrong target badge`,
+          );
         }
       }
     });
@@ -101,6 +146,79 @@ describe("conversions hub data", () => {
         0,
       );
       assert.equal(soonTotal, 3);
+    });
+  });
+
+  describe("pair pages", () => {
+    const sections = buildConversionSections();
+    const pairSlugs = sections.flatMap((section) =>
+      section.tiles
+        .filter((tile) => tile.implemented && tile.href.startsWith("/convert/"))
+        .map((tile) => tile.href.slice("/convert/".length)),
+    );
+
+    it("every live pair without a dedicated page resolves to a locked convert tool", () => {
+      assert.ok(pairSlugs.length > 0, "no pair pages built");
+      assert.equal(new Set(pairSlugs).size, pairSlugs.length, "duplicate pair slug");
+      for (const slug of pairSlugs) {
+        const tool = findPairTool(slug);
+        assert.ok(tool, `${slug} does not resolve to a tool`);
+        assert.equal(tool.operation, "convert");
+        assert.ok(tool.targetFormat, `${slug} has no locked target`);
+        assert.ok(
+          Array.isArray(tool.sourceExtensions) && tool.sourceExtensions.length > 0,
+          `${slug} has no source extensions`,
+        );
+        assert.equal(tool.accept, tool.sourceExtensions.join(","));
+        assert.ok(tool.label.includes(" -> "), `${slug} label misses the pair`);
+      }
+    });
+
+    it("dedicated pairs never spawn a pair page", () => {
+      const dedicatedSlugs = [
+        "pdf-to-word",
+        "pdf-to-powerpoint",
+        "pdf-to-excel",
+        "word-to-pdf",
+        "powerpoint-to-pdf",
+        "excel-to-pdf",
+        "jpg-to-pdf",
+      ];
+      for (const slug of dedicatedSlugs) {
+        assert.equal(findPairTool(slug), null, `${slug} must stay a dedicated page`);
+      }
+    });
+
+    it("unknown pair slugs fall back to the hub", () => {
+      assert.equal(findPairTool("no-such-pair"), null);
+      assert.equal(findPairTool(null), null);
+      assert.equal(findPairTool(""), null);
+    });
+
+    it("badge colors cover every page that shows badges", () => {
+      for (const tool of TOOLS) {
+        if (
+          tool.available &&
+          tool.operation === "convert" &&
+          tool.targetFormat &&
+          Array.isArray(tool.sourceExtensions) &&
+          tool.sourceExtensions.length > 0
+        ) {
+          assert.ok(
+            FORMAT_COLORS[tool.sourceExtensions[0].slice(1)],
+            `${tool.slug} intro has no source color`,
+          );
+          assert.ok(FORMAT_COLORS[tool.targetFormat], `${tool.slug} intro has no target color`);
+        }
+      }
+      for (const slug of pairSlugs) {
+        const tool = findPairTool(slug);
+        assert.ok(
+          FORMAT_COLORS[tool.sourceExtensions[0].slice(1)],
+          `${slug} intro has no source color`,
+        );
+        assert.ok(FORMAT_COLORS[tool.targetFormat], `${slug} intro has no target color`);
+      }
     });
   });
 });

@@ -42,6 +42,9 @@ function ToolRuntime({ tool }) {
     "pagenumbers",
   ].includes(tool.operation);
   const hasResult = Boolean(state.resultDownloadUrl);
+  // A fixed-target conversion (a named pair page) shows no options panel:
+  // the intro badges carry the target, so there is nothing to pick.
+  const showsOptions = hasOptionControls && !state.targetFormatLocked;
 
   return (
     <main className="mx-auto w-full max-w-3xl px-4 pb-16 pt-8 sm:px-6 lg:max-w-4xl 2xl:max-w-5xl">
@@ -73,14 +76,13 @@ function ToolRuntime({ tool }) {
           />
         </div>
 
-        {hasOptionControls && hasFiles && (
+        {showsOptions && hasFiles && (
           <div className="mt-4">
             <OptionsPanel
               kind={tool.operation}
               state={state}
               files={state.selectedFiles}
               operation={tool.operation}
-              targetFormatLocked={state.targetFormatLocked}
               singlePdfPages={state.singlePdfPages}
             />
           </div>

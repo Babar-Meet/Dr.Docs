@@ -17,7 +17,6 @@ export default function OptionsPanel({
   state = {},
   files = [],
   operation = "",
-  targetFormatLocked = false,
   singlePdfPages = null,
 }) {
   const resolvedKind = kind && kind !== "info" ? kind : operation;
@@ -27,7 +26,6 @@ export default function OptionsPanel({
       <ConvertOptions
         targetFormat={state.targetFormat}
         setTargetFormat={state.setTargetFormat}
-        targetFormatLocked={targetFormatLocked}
         convertTargetOptions={state.convertTargetOptions}
         files={files}
       />
