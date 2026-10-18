@@ -5,9 +5,10 @@ import ThemeToggle from "./ThemeToggle.jsx";
 import { GENERIC_CONVERT, GROUP_ORDER, TOOL_GROUPS, TOOLS } from "../../lib/toolConfig";
 
 // One grouped menu with every tool, mirroring the reference product's header:
-// brand on the left, a tools dropdown, account actions on the right. The menu
-// opens with a search box on top: typing filters the list live so nobody has
-// to guess which group holds a tool. An empty query shows today's grouped list.
+// brand on the left, a tools picker, theme toggle on the right. The header
+// control IS the search field: it stays visible on every page, typing filters
+// the list live, and the menu below it is only the grouped results. No search
+// box lives inside the dropdown itself. An empty query shows the full list.
 // Small search helpers for the tools menu. Matching is word-based with a
 // one-letter tolerance ("mar" finds Merge, "rot" finds Rotate), so a stray
 // substring in the longer descriptions can never pollute the results. The
@@ -46,6 +47,7 @@ export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [query, setQuery] = useState("");
   const menuRef = useRef(null);
+  const inputRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -140,43 +142,58 @@ export default function Header() {
 
         <div className="flex items-center gap-2">
           <div ref={menuRef} className="relative">
-            <button
-              type="button"
-              aria-haspopup="menu"
-              aria-expanded={menuOpen}
-              onClick={() => setMenuOpen((open) => !open)}
+            {/* The header control is the search field itself: type here to
+                filter the tool list, or open the menu with the chevron to
+                browse every group. Nothing search-like lives in the panel. */}
+            <div
               className={
-                "inline-flex items-center gap-2 rounded-[5px] border px-3 py-2 font-body text-[13px] font-bold leading-none transition " +
+                "flex items-center gap-2 rounded-[5px] border bg-deep px-2.5 py-2 transition " +
                 (menuOpen
-                  ? "border-orange bg-panel text-orange"
-                  : "border-borderStrong bg-panel text-offWhite hover:border-[#666666] hover:text-content")
+                  ? "border-orange ring-2 ring-orange/20"
+                  : "border-borderStrong hover:border-[#666666]")
               }
             >
-              PDF tools
-              <ChevronDown
-                className={"h-3.5 w-3.5 transition " + (menuOpen ? "rotate-180" : "")}
+              <Search className="h-3.5 w-3.5 shrink-0 text-muted" />
+              <input
+                ref={inputRef}
+                type="text"
+                role="combobox"
+                aria-expanded={menuOpen}
+                aria-autocomplete="list"
+                aria-controls="header-tools-menu"
+                aria-label="Search PDF tools"
+                value={query}
+                onChange={(event) => {
+                  setQuery(event.target.value);
+                  setMenuOpen(true);
+                }}
+                onFocus={() => setMenuOpen(true)}
+                onKeyDown={onSearchKeyDown}
+                placeholder="PDF tools"
+                className="w-24 bg-transparent font-body text-[13px] font-medium text-content outline-none placeholder:font-body placeholder:text-muted sm:w-44"
               />
-            </button>
+              <button
+                type="button"
+                tabIndex={-1}
+                aria-label="Open the PDF tools menu"
+                onClick={() => {
+                  setMenuOpen((open) => !open);
+                  if (!menuOpen) inputRef.current?.focus();
+                }}
+                className="shrink-0"
+              >
+                <ChevronDown
+                  className={"h-3.5 w-3.5 text-muted transition " + (menuOpen ? "rotate-180" : "")}
+                />
+              </button>
+            </div>
 
             {menuOpen && (
               <div
+                id="header-tools-menu"
                 role="menu"
                 className="absolute right-0 top-[calc(100%+8px)] z-40 max-h-[70vh] w-72 overflow-y-auto rounded-[6px] border border-borderStrong bg-panel p-2 shadow-lg"
               >
-                <div className="mb-1 flex items-center gap-2 rounded-[5px] border border-borderStrong bg-deep px-2.5 py-2">
-                  <Search className="h-3.5 w-3.5 shrink-0 text-muted" />
-                  <input
-                    type="text"
-                    value={query}
-                    onChange={(event) => setQuery(event.target.value)}
-                    onKeyDown={onSearchKeyDown}
-                    placeholder="Search tools"
-                    aria-label="Search tools"
-                    autoFocus
-                    className="w-full bg-transparent font-body text-[13px] font-medium text-content outline-none placeholder:font-body placeholder:text-muted"
-                  />
-                </div>
-
                 {filtered.length === 0 && (
                   <p className="px-2 py-3 font-body text-[13px] leading-normal text-muted">
                     No tool for "{trimmed}". Try merge, rotate, compress or
