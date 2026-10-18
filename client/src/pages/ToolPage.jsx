@@ -1,4 +1,10 @@
-import { LoaderCircle, WandSparkles } from "lucide-react";
+import {
+  CheckCircle2,
+  Download,
+  LoaderCircle,
+  RotateCcw,
+  WandSparkles,
+} from "lucide-react";
 import useToolProcess from "../hooks/useToolProcess";
 import DropZone from "../components/tool/DropZone";
 import LimitsCard from "../components/tool/LimitsCard";
@@ -18,6 +24,9 @@ export default function ToolPage({ tool }) {
 function ToolRuntime({ tool }) {
   const state = useToolProcess(tool);
   const hasFiles = state.selectedFiles.length > 0;
+  // After a successful run the action button becomes Download and a second
+  // Start over button appears next to it; Process returns when the results
+  // are cleared by Start over, a file removal, or a new pick.
   const hasOptionControls = [
     "convert",
     "merge",
@@ -25,6 +34,7 @@ function ToolRuntime({ tool }) {
     "rotate",
     "protect",
   ].includes(tool.operation);
+  const hasResult = Boolean(state.resultDownloadUrl);
 
   return (
     <main className="mx-auto w-full max-w-3xl px-4 pb-16 pt-8 sm:px-6 lg:max-w-4xl 2xl:max-w-5xl">
@@ -70,24 +80,62 @@ function ToolRuntime({ tool }) {
         )}
 
         {hasFiles && (
-          <button
-            type="button"
-            onClick={state.submit}
-            disabled={!state.canSubmit}
-            className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-[5px] bg-orange px-5 py-3.5 font-display text-[14px] font-bold leading-none text-black transition hover:bg-orangeSoft active:bg-orangeDark disabled:cursor-not-allowed disabled:border disabled:border-borderDark disabled:bg-elevated disabled:text-muted"
-          >
-            {state.isProcessing ? (
-              <>
-                <LoaderCircle className="h-4 w-4 animate-spin" />
-                Processing...
-              </>
+          <div className="mt-4">
+            {hasResult ? (
+              <div className="flex gap-2">
+                <a
+                  href={state.resultDownloadUrl}
+                  download
+                  onClick={state.markResultDownloaded}
+                  className={
+                    "flex flex-1 items-center justify-center gap-2 rounded-[5px] bg-success px-5 py-3.5 font-display text-[14px] font-bold leading-none text-black transition hover:bg-success/85 " +
+                    (state.resultDownloaded
+                      ? "pointer-events-none cursor-default bg-success/70"
+                      : "")
+                  }
+                >
+                  {state.resultDownloaded ? (
+                    <>
+                      <CheckCircle2 className="h-4 w-4" />
+                      Downloaded
+                    </>
+                  ) : (
+                    <>
+                      <Download className="h-4 w-4" />
+                      Download
+                    </>
+                  )}
+                </a>
+                <button
+                  type="button"
+                  onClick={state.clearFiles}
+                  className="inline-flex items-center justify-center gap-2 rounded-[5px] border border-borderStrong bg-deep px-5 py-3.5 font-display text-[14px] font-bold leading-none text-offWhite transition hover:bg-elevated hover:text-content"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                  Start over
+                </button>
+              </div>
             ) : (
-              <>
-                <WandSparkles className="h-4 w-4" />
-                Process Files
-              </>
+              <button
+                type="button"
+                onClick={state.submit}
+                disabled={!state.canSubmit}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-[5px] bg-orange px-5 py-3.5 font-display text-[14px] font-bold leading-none text-black transition hover:bg-orangeSoft active:bg-orangeDark disabled:cursor-not-allowed disabled:border disabled:border-borderDark disabled:bg-elevated disabled:text-muted"
+              >
+                {state.isProcessing ? (
+                  <>
+                    <LoaderCircle className="h-4 w-4 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <WandSparkles className="h-4 w-4" />
+                    Process Files
+                  </>
+                )}
+              </button>
             )}
-          </button>
+          </div>
         )}
 
         {hasFiles && state.rejectedCount > 0 && !state.isProcessing && (

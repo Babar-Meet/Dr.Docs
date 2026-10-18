@@ -41,6 +41,9 @@ export default function useToolProcess(tool) {
   const [password, setPassword] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [status, setStatus] = useState(null);
+  // Set on the first click of the post-run Download button. Downloads are
+  // single-use on the server, so the button locks after it fires once.
+  const [resultDownloaded, setResultDownloaded] = useState(false);
 
   // Object URLs created for image previews; revoked when the list changes.
   const liveUrlsRef = useRef([]);
@@ -96,6 +99,10 @@ export default function useToolProcess(tool) {
     });
   }
 
+  function markResultDownloaded() {
+    setResultDownloaded(true);
+  }
+
   function onPickFiles(fileList) {
     const incomingFiles = Array.from(fileList || []);
     if (incomingFiles.length === 0) return;
@@ -128,6 +135,7 @@ export default function useToolProcess(tool) {
     setSelectedFiles(normalizedFiles);
     setInspections(freshInspections);
     setStatus(null);
+    setResultDownloaded(false);
 
     // Thumbnails and page counts arrive asynchronously, one file at a time.
     for (const file of normalizedFiles) {
@@ -172,6 +180,7 @@ export default function useToolProcess(tool) {
       return next;
     });
     setStatus(null);
+    setResultDownloaded(false);
   }
 
   function removeFile(index) {
@@ -187,6 +196,7 @@ export default function useToolProcess(tool) {
       return next;
     });
     setStatus(null);
+    setResultDownloaded(false);
   }
 
   function onDragOver(event) {
@@ -209,6 +219,7 @@ export default function useToolProcess(tool) {
     setSelectedFiles([]);
     setInspections({});
     setStatus(null);
+    setResultDownloaded(false);
   }
 
   async function submit() {
@@ -356,6 +367,7 @@ export default function useToolProcess(tool) {
           ? buildEndpoint(payload.batchDownloadUrl)
           : "",
       });
+      setResultDownloaded(false);
     } catch (error) {
       setFailure("Processing failed", error.message || "Network error");
     } finally {
@@ -371,6 +383,17 @@ export default function useToolProcess(tool) {
     const count = inspections[fileKey(onlyFile)]?.pages;
     return count > 0 ? count : null;
   }, [selectedFiles, inspections]);
+
+  // Post-run download target for the transformed action button: the batch ZIP
+  // when more than one output exists, otherwise the first output.
+  const resultDownloadUrl = useMemo(() => {
+    if (status?.kind !== "success") return "";
+    if (status.batchDownloadUrl) return status.batchDownloadUrl;
+    if (status.results?.length > 0) {
+      return buildEndpoint(status.results[0].downloadUrl);
+    }
+    return "";
+  }, [status]);
 
   return {
     selectedFiles,
@@ -391,6 +414,9 @@ export default function useToolProcess(tool) {
     setPassword,
     isProcessing,
     status,
+    resultDownloaded,
+    resultDownloadUrl,
+    markResultDownloaded,
     operation: tool.operation,
     targetFormatLocked,
     convertTargetOptions,
