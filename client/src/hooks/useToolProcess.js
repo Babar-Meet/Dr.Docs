@@ -40,7 +40,9 @@ export default function useToolProcess(tool) {
   const [pageRanges, setPageRanges] = useState("");
   // Rotate tool state: UI mode plus one net rotation value per mode. Net
   // deltas are 0 (nothing) or 90, 180, 270 clockwise. LEFT maps to 270.
-  const [rotateMode, setRotateMode] = useState("all");
+  // Preview mode is the default: most people turn individual pages, so the
+  // live grid greets them first. "all" is one press away in the tabs.
+  const [rotateMode, setRotateMode] = useState("pages");
   const [rotateAllDelta, setRotateAllDelta] = useState(0);
   const [pageRotations, setPageRotations] = useState({});
   const [password, setPassword] = useState("");

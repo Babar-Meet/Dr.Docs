@@ -5,7 +5,7 @@ import { renderPdfThumbnails } from "../../../lib/pdfThumbs";
 
 // One card per page. The thumbnail carries the page's existing rotation plus
 // the user's picks; a CSS transform turns it live with every press.
-const PREVIEW_WIDTH = 132;
+const PREVIEW_WIDTH = 155;
 
 const SUMMARY_BY_DELTA = (delta) =>
   delta === 270 ? "Left" : delta === 180 ? "Half turn" : "Right";
@@ -30,18 +30,26 @@ export default function RotateOptions({
   const [previews, setPreviews] = useState([]);
   const [previewTotal, setPreviewTotal] = useState(0);
   const [previewError, setPreviewError] = useState("");
+  const [previewComplete, setPreviewComplete] = useState(false);
   const loadedFileRef = useRef(null);
   const isPagesMode = mode === "pages";
 
-  // The preview renders inside the browser only. It starts when the user opens
-  // the Choose pages tab and restarts whenever the selected file changes.
+  // The preview renders inside the browser only. It starts the moment a file
+  // is selected (preview mode is the default) and restarts when the file
+  // changes. A finished job is never restarted on later visits to the tab.
   useEffect(() => {
     if (!isPagesMode || !file) return;
-    if (loadedFileRef.current === file) return;
+    // pdfPages changes after the pick when the page-count inspection lands.
+    // That update must not cancel the running render, so this effect only
+    // depends on the mode and the file, and a completed job is never restarted.
+    if (loadedFileRef.current === file && previewComplete) {
+      return;
+    }
     loadedFileRef.current = file;
     setPreviews([]);
     setPreviewTotal(0);
     setPreviewError("");
+    setPreviewComplete(false);
     let cancelled = false;
 
     renderPdfThumbnails(file, {
@@ -53,11 +61,12 @@ export default function RotateOptions({
       },
     })
       .then((result) => {
-        if (!cancelled) setPreviewTotal(result.total);
+        if (cancelled) return;
+        setPreviewTotal(result.total);
+        setPreviewComplete(true);
       })
       .catch(() => {
         if (cancelled) return;
-        setPreviewTotal(pdfPages || 0);
         setPreviewError(
           "Preview is not available for this file. Rotate all pages still works.",
         );
@@ -66,7 +75,7 @@ export default function RotateOptions({
     return () => {
       cancelled = true;
     };
-  }, [isPagesMode, file, pdfPages]);
+  }, [isPagesMode, file]);
 
   const rotatedCount = useMemo(
     () => Object.keys(pageRotations).length,
@@ -215,7 +224,7 @@ function PageCard({ entry, delta, onRotate }) {
   return (
     <div
       className={
-        "relative w-[148px] rounded-[6px] border p-2 transition " +
+        "relative w-[172px] rounded-[6px] border p-2 transition " +
         (delta ? "border-orange bg-successBg/40" : "border-borderStrong bg-deep")
       }
     >
@@ -234,7 +243,7 @@ function PageCard({ entry, delta, onRotate }) {
         </button>
       ) : null}
 
-      <div className="flex h-[132px] items-center justify-center overflow-hidden">
+      <div className="flex h-[150px] items-center justify-center overflow-hidden">
         {entry.thumbnail ? (
           <img
             src={entry.thumbnail}
@@ -244,19 +253,24 @@ function PageCard({ entry, delta, onRotate }) {
             style={{ transform: pageTransform(entry.baseRotation, delta) }}
           />
         ) : (
-          <div className="flex h-full w-24 items-center justify-center rounded-[5px] bg-elevated font-mono text-[13px] text-muted">
+          <div className="flex h-full w-28 items-center justify-center rounded-[5px] bg-elevated font-mono text-[13px] text-muted">
             {entry.page}
           </div>
         )}
       </div>
 
-      {delta ? (
-        <p className="mt-1 text-center font-display text-[10px] font-bold uppercase tracking-[0.06em] text-orange">
-          {SUMMARY_BY_DELTA(delta)}
-        </p>
-      ) : null}
+      {/* Fixed badge slot: with it, the turn buttons stay in the same spot
+          whether a page was turned or not, whatever its orientation. */}
+      <p
+        className={
+          "mt-1 h-[15px] text-center font-display text-[10px] font-bold uppercase leading-[15px] tracking-[0.06em] text-orange " +
+          (delta ? "" : "invisible")
+        }
+      >
+        {delta ? SUMMARY_BY_DELTA(delta) : "placeholder"}
+      </p>
 
-      <div className="mt-1 flex justify-center gap-2">
+      <div className="flex justify-center gap-2">
         <button
           type="button"
           onClick={() => turn("left")}

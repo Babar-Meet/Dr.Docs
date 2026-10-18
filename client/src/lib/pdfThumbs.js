@@ -21,7 +21,7 @@ function scaleToFit(viewport, targetWidth) {
 // Renders every page at preview size. Returns entries as they complete through
 // onEntry so a long document fills in progressively. Pages past the cap get a
 // text-only entry with no thumbnail so very large files stay responsive.
-export async function renderPdfThumbnails(file, { targetWidth = 132, onEntry } = {}) {
+export async function renderPdfThumbnails(file, { targetWidth = 155, onEntry } = {}) {
   const pdfjs = await loadPdfjs();
   const data = await file.arrayBuffer();
   const doc = await pdfjs.getDocument({ data }).promise;
