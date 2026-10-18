@@ -13,6 +13,10 @@ async function loadPdfjs() {
   return pdfjs;
 }
 
+// Shared with the page numbers preview, which renders selected pages on
+// demand instead of every page up front.
+export { loadPdfjs };
+
 function scaleToFit(viewport, targetWidth) {
   if (viewport.width <= 0) return 1;
   return targetWidth / viewport.width;

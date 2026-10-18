@@ -39,7 +39,13 @@ export default function DropZone({
         multiple={multiple}
         accept={accept || undefined}
         className="hidden"
-        onChange={(event) => onPickFiles(event.target.files)}
+        onChange={(event) => {
+          onPickFiles(event.target.files);
+          // Re-picking the same file leaves input.value unchanged, and React
+          // then swallows the second change event. Reset after every pick so
+          // "Start over from scratch" followed by the same file still works.
+          event.target.value = "";
+        }}
       />
       <button
         type="button"

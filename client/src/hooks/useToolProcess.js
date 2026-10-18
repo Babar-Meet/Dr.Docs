@@ -277,13 +277,6 @@ export default function useToolProcess(tool) {
     setPassword("");
   }
 
-  // Start over clears the run, not the files: the picked PDFs stay, so the
-  // user can change the options and run again without re-uploading.
-  function clearRun() {
-    setStatus(null);
-    setResultDownloaded(false);
-  }
-
   async function submit() {
     if (isProcessing) return;
 
@@ -543,7 +536,6 @@ export default function useToolProcess(tool) {
     onDragOver,
     onDragLeave,
     clearFiles,
-    clearRun,
     reorderFiles,
     removeFile,
     submit,

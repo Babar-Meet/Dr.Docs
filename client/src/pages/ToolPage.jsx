@@ -26,8 +26,9 @@ function ToolRuntime({ tool }) {
   const state = useToolProcess(tool);
   const hasFiles = state.selectedFiles.length > 0;
   // After a successful run the action button becomes Download and a second
-  // Start over button appears next to it; Process returns when the results
-  // are cleared by Start over, a file removal, or a new pick.
+  // Start over from scratch resets everything including the picked files, so
+  // the two buttons say exactly what they do: process again keeps the files,
+  // start over from scratch throws them away.
   // Unlock joins this list for the Password box: it is the one place a
   // password-locked PDF can be opened with its original password.
   const hasOptionControls = [
@@ -119,15 +120,15 @@ function ToolRuntime({ tool }) {
                   className="inline-flex items-center justify-center gap-2 rounded-[5px] border border-borderStrong bg-deep px-5 py-3.5 font-display text-[14px] font-bold leading-none text-offWhite transition hover:bg-elevated hover:text-content disabled:cursor-default disabled:text-muted"
                 >
                   <RefreshCw className="h-4 w-4" />
-                  Process again
+                  Process files again
                 </button>
                 <button
                   type="button"
-                  onClick={state.clearRun}
+                  onClick={state.clearFiles}
                   className="inline-flex items-center justify-center gap-2 rounded-[5px] border border-borderStrong bg-deep px-5 py-3.5 font-display text-[14px] font-bold leading-none text-offWhite transition hover:bg-elevated hover:text-content"
                 >
                   <RotateCcw className="h-4 w-4" />
-                  Start over
+                  Start over from scratch
                 </button>
               </div>
             ) : (

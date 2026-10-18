@@ -107,6 +107,7 @@ export default function OptionsPanel({
         setPageNumberPosition={state.setPageNumberPosition}
         pageNumberMargin={state.pageNumberMargin}
         setPageNumberMargin={state.setPageNumberMargin}
+        file={state.selectedFiles[0]}
       />
     );
   }
