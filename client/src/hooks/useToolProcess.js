@@ -94,11 +94,20 @@ export default function useToolProcess(tool) {
     return commonConvertTargets(selectedFiles);
   }, [tool.operation, selectedFiles]);
 
-  function setFailure(message, reason) {
+  function setFailure(message, reason, code = "") {
     setStatus({
       kind: "failed",
       message,
       reason,
+      code,
+      // The refusal for a password-locked file gets one plain hint so the
+      // dead end ("enter the password") always has a box to type it in.
+      hint:
+        code === "PASSWORD_REQUIRED"
+          ? tool.operation === "unlock"
+            ? "Type the password in the Password box and process again."
+            : "Have the password? Open Unlock PDF and enter it there."
+          : "",
       results: [],
       batchDownloadUrl: "",
     });
@@ -173,6 +182,7 @@ export default function useToolProcess(tool) {
     setResultDownloaded(false);
     setRotateAllDelta(0);
     setPageRotations({});
+    setPassword("");
 
     // Thumbnails and page counts arrive asynchronously, one file at a time.
     for (const file of normalizedFiles) {
@@ -257,6 +267,7 @@ export default function useToolProcess(tool) {
     setInspections({});
     setStatus(null);
     setResultDownloaded(false);
+    setPassword("");
   }
 
   async function submit() {
@@ -388,6 +399,7 @@ export default function useToolProcess(tool) {
         setFailure(
           payload.message || "Processing failed",
           payload.reason || "Unknown error",
+          payload.code || "",
         );
         return;
       }

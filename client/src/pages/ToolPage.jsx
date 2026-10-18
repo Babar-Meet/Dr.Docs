@@ -27,12 +27,15 @@ function ToolRuntime({ tool }) {
   // After a successful run the action button becomes Download and a second
   // Start over button appears next to it; Process returns when the results
   // are cleared by Start over, a file removal, or a new pick.
+  // Unlock joins this list for the Password box: it is the one place a
+  // password-locked PDF can be opened with its original password.
   const hasOptionControls = [
     "convert",
     "merge",
     "split",
     "rotate",
     "protect",
+    "unlock",
   ].includes(tool.operation);
   const hasResult = Boolean(state.resultDownloadUrl);
 

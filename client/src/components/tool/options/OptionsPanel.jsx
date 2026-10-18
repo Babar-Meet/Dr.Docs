@@ -3,10 +3,12 @@ import MergeOptions from "./MergeOptions.jsx";
 import SplitOptions from "./SplitOptions.jsx";
 import RotateOptions from "./RotateOptions.jsx";
 import ProtectOptions from "./ProtectOptions.jsx";
+import UnlockOptions from "./UnlockOptions.jsx";
 
-// ToolRecord.kind is "info" for compress, unlock, ocr and repair; those tools
+// ToolRecord.kind is "info" for compress, ocr and repair; those tools
 // have no selectable options, so they render no panel here. Their per-engine
-// notes live in ToolPage's About section.
+// notes live in ToolPage's About section. Unlock renders a panel too: it is
+// the one tool where a password-locked PDF can be opened with its password.
 
 export default function OptionsPanel({
   kind,
@@ -68,6 +70,15 @@ export default function OptionsPanel({
   if (resolvedKind === "protect") {
     return (
       <ProtectOptions
+        password={state.password}
+        setPassword={state.setPassword}
+      />
+    );
+  }
+
+  if (resolvedKind === "unlock") {
+    return (
+      <UnlockOptions
         password={state.password}
         setPassword={state.setPassword}
       />

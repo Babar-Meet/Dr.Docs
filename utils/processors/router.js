@@ -87,9 +87,9 @@ async function ensureOutputExists(outputPath) {
   }
 }
 
-async function unlockByType({ fileType, inputPath, outputPath, qpdfBin }) {
+async function unlockByType({ fileType, inputPath, outputPath, qpdfBin, password }) {
   if (fileType.extension === ".pdf") {
-    await unlockPdfRestrictions({ inputPath, outputPath, qpdfBin });
+    await unlockPdfRestrictions({ inputPath, outputPath, qpdfBin, password });
     return "Restrictions removed from PDF.";
   }
 
@@ -546,6 +546,7 @@ export async function processFile({
         inputPath: file.path,
         outputPath,
         qpdfBin,
+        password,
       });
       await ensureOutputExists(outputPath);
 

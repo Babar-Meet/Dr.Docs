@@ -294,5 +294,111 @@ describe("pdfProcessor security boundary", () => {
       const outDoc = await PDFDocument.load(outBytes);
       assert.equal(outDoc.getPageCount(), origDoc.getPageCount());
     });
+
+    it("decrypts an encrypted pdf when the user supplies the original password", async () => {
+      const work = path.join(TMP_ROOT, "unlock-with-password");
+      await fs.ensureDir(work);
+      const { PDFDocument } = await import("pdf-lib");
+      const doc = await PDFDocument.create();
+      doc.addPage([200, 200]);
+      const plain = path.join(work, "plain.pdf");
+      const source = path.join(work, "locked.pdf");
+      await fs.writeFile(plain, await doc.save());
+      await runCommand(QPDF_BIN, [
+        "--encrypt", "castle-key", "castle-key", "256", "--", plain, source,
+      ], { timeoutMs: 60000 });
+      const out = path.join(work, "out.pdf");
+
+      await unlockPdfRestrictions({
+        inputPath: source,
+        outputPath: out,
+        qpdfBin: QPDF_BIN,
+        password: "castle-key",
+      });
+      // The output must open with no password anywhere: the lock is gone.
+      const unlocked = await PDFDocument.load(await fs.readFile(out));
+      assert.equal(unlocked.getPageCount(), 1);
+    });
+
+    it("a wrong password still fails with PASSWORD_REQUIRED and the frozen message", async () => {
+      const work = path.join(TMP_ROOT, "unlock-wrong-password");
+      await fs.ensureDir(work);
+      const { PDFDocument } = await import("pdf-lib");
+      const doc = await PDFDocument.create();
+      doc.addPage([200, 200]);
+      const plain = path.join(work, "plain.pdf");
+      const source = path.join(work, "locked.pdf");
+      await fs.writeFile(plain, await doc.save());
+      await runCommand(QPDF_BIN, [
+        "--encrypt", "castle-key", "castle-key", "256", "--", plain, source,
+      ], { timeoutMs: 60000 });
+      // Guard against a false pass from a malformed option: the same form with
+      // the correct password must open the file before the wrong one is tested.
+      await runCommand(QPDF_BIN, [
+        "--decrypt", "--password=castle-key", source, path.join(work, "probe.pdf"),
+      ], { timeoutMs: 60000 });
+      const out = path.join(work, "out.pdf");
+
+      await assert.rejects(
+        () =>
+          unlockPdfRestrictions({
+            inputPath: source,
+            outputPath: out,
+            qpdfBin: QPDF_BIN,
+            password: "wrong-password",
+          }),
+        (err) => {
+          assert.ok(err instanceof AppError);
+          assert.equal(err.code, "PASSWORD_REQUIRED");
+          assert.equal(err.statusCode, 400);
+          assert.equal(err.message, SECURE_ENCRYPTION_MESSAGE);
+          return true;
+        },
+      );
+      assert.ok(!(await fs.pathExists(out)));
+    });
+
+    it("an encrypted pdf without a password stays PASSWORD_REQUIRED (frozen default path)", async () => {
+      const work = path.join(TMP_ROOT, "unlock-no-password");
+      await fs.ensureDir(work);
+      const { PDFDocument } = await import("pdf-lib");
+      const doc = await PDFDocument.create();
+      doc.addPage([200, 200]);
+      const plain = path.join(work, "plain.pdf");
+      const source = path.join(work, "locked.pdf");
+      await fs.writeFile(plain, await doc.save());
+      await runCommand(QPDF_BIN, [
+        "--encrypt", "castle-key", "castle-key", "256", "--", plain, source,
+      ], { timeoutMs: 60000 });
+      const out = path.join(work, "out.pdf");
+
+      await assert.rejects(
+        () =>
+          unlockPdfRestrictions({
+            inputPath: source,
+            outputPath: out,
+            qpdfBin: QPDF_BIN,
+          }),
+        (err) => err.code === "PASSWORD_REQUIRED" && err.statusCode === 400,
+      );
+    });
+
+    it("a password supplied for an unencrypted pdf changes nothing (copy-through)", async () => {
+      const work = path.join(TMP_ROOT, "unlock-password-unused");
+      await fs.ensureDir(work);
+      const valid = await makeValidPdf(work, "valid.pdf", 2);
+      const out = path.join(work, "out.pdf");
+
+      await unlockPdfRestrictions({
+        inputPath: valid,
+        outputPath: out,
+        qpdfBin: QPDF_BIN,
+        password: "unused-secret",
+      });
+      assert.ok(await fs.pathExists(out));
+      const { PDFDocument } = await import("pdf-lib");
+      const unlocked = await PDFDocument.load(await fs.readFile(out));
+      assert.equal(unlocked.getPageCount(), 2);
+    });
   });
 });

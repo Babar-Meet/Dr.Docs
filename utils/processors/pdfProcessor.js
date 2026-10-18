@@ -49,9 +49,20 @@ export async function unlockPdfRestrictions({
   inputPath,
   outputPath,
   qpdfBin,
+  password = "",
 }) {
+  // The password field only ever carries a password the user typed for this
+  // job. qpdf uses it to open the file the user owns; a wrong or missing
+  // password still fails with PASSWORD_REQUIRED, so nothing is bypassed.
+  const args = ["--decrypt"];
+  if (String(password || "").length > 0) {
+    // qpdf 12 requires the form --password=value; separate arguments error out.
+    args.push(`--password=${String(password)}`);
+  }
+  args.push(inputPath, outputPath);
+
   try {
-    await runCommand(qpdfBin, ["--decrypt", inputPath, outputPath], {
+    await runCommand(qpdfBin, args, {
       timeoutMs: 120000,
     });
   } catch (error) {

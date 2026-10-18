@@ -83,7 +83,7 @@ export const TOOL_SENTENCES = {
   "sign-pdf": "Not built yet: place a drawn or uploaded signature on a PDF.",
   "watermark-pdf": "Not built yet: stamp text or an image over PDF pages.",
   "rotate-pdf": "Rotate all pages or turn pages live, one at a time.",
-  "unlock-pdf": "Remove edit and copy restrictions from a PDF.",
+  "unlock-pdf": "Remove restrictions, or open a locked PDF with its password.",
   "protect-pdf": "Add a password with 256-bit AES encryption.",
   "organize-pdf": "Not built yet: reorder and delete pages of one PDF.",
   "pdf-to-pdfa": "Not built yet: rewrite a PDF into the PDF/A archive format.",

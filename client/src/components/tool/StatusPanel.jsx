@@ -38,6 +38,11 @@ export default function StatusPanel({ status }) {
               {status.reason}
             </p>
           )}
+          {status.hint && (
+            <p className="font-body text-[12px] font-semibold leading-normal text-orange">
+              {status.hint}
+            </p>
+          )}
         </div>
       </div>
 

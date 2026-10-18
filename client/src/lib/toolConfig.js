@@ -361,9 +361,9 @@ export const TOOLS = [
     icon: LockOpen,
     available: true,
     operation: "unlock",
-    help: "Remove restriction-based protections only",
+    help: "Remove restrictions or open a locked PDF with its password",
     detail:
-      "Unlock removes edit and copy restrictions where supported. Strong encryption and passwords are never bypassed.",
+      "Unlock removes edit and copy restrictions where supported. For a password-protected PDF, type its original password in the Password box. A wrong or missing password always fails, and strong encryption is never bypassed.",
     kind: "info",
     sourceExtensions: null,
     targetFormat: null,

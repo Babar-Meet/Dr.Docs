@@ -37,6 +37,10 @@ export async function submitProcess({
     formData.append("password", password);
   }
 
+  if (operation === "unlock" && password) {
+    formData.append("password", password);
+  }
+
   files.forEach((file) => {
     formData.append("files", file);
   });
