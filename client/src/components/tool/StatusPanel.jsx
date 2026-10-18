@@ -46,17 +46,6 @@ export default function StatusPanel({ status }) {
         </div>
       </div>
 
-      {status.kind === "success" && status.batchDownloadUrl && (
-        <a
-          href={status.batchDownloadUrl}
-          download
-          className="mt-4 inline-flex items-center gap-2 rounded-[5px] bg-orange px-4 py-2 font-display text-[13px] font-bold text-black transition hover:bg-orangeSoft"
-        >
-          <Download className="h-4 w-4" />
-          Download All
-        </a>
-      )}
-
       {status.kind === "success" && status.results?.length > 0 && (
         <div className="mt-4 space-y-2">
           {status.results.map((item) => (
@@ -72,9 +61,10 @@ export default function StatusPanel({ status }) {
                   {item.message}
                 </p>
               </div>
-              {/* One download button total for a single output: the primary
-                  button above is that download. Rows carry their own file
-                  button only when a batch produced several files. */}
+              {/* The primary button above already downloads everything (the
+                  ZIP when a batch produced several files). Rows carry their
+                  own file button only in that batch case, so a user can grab
+                  one specific file instead. Single output: one button total. */}
               {status.results.length > 1 && (
                 <a
                   href={buildEndpoint(item.downloadUrl)}

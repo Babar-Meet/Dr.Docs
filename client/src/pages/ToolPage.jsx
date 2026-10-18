@@ -107,7 +107,7 @@ function ToolRuntime({ tool }) {
                   ) : (
                     <>
                       <Download className="h-4 w-4" />
-                      Download
+                      {state.status?.batchDownloadUrl ? "Download All" : "Download"}
                     </>
                   )}
                 </a>
