@@ -72,14 +72,19 @@ export default function StatusPanel({ status }) {
                   {item.message}
                 </p>
               </div>
-              <a
-                href={buildEndpoint(item.downloadUrl)}
-                download={item.downloadName}
-                className="ml-2 inline-flex shrink-0 items-center gap-1 rounded-[5px] bg-success px-2.5 py-1.5 font-display text-xs font-bold text-black hover:bg-success/85"
-              >
-                <Download className="h-3 w-3" />
-                Download
-              </a>
+              {/* One download button total for a single output: the primary
+                  button above is that download. Rows carry their own file
+                  button only when a batch produced several files. */}
+              {status.results.length > 1 && (
+                <a
+                  href={buildEndpoint(item.downloadUrl)}
+                  download={item.downloadName}
+                  className="ml-2 inline-flex shrink-0 items-center gap-1 rounded-[5px] bg-success px-2.5 py-1.5 font-display text-xs font-bold text-black hover:bg-success/85"
+                >
+                  <Download className="h-3 w-3" />
+                  Download
+                </a>
+              )}
             </div>
           ))}
         </div>
