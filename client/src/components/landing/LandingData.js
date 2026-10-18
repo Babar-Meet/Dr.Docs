@@ -81,7 +81,7 @@ export const TOOL_SENTENCES = {
   "jpg-to-pdf": "Turn JPG and PNG images into a PDF, one image per page.",
   "html-to-pdf": "Not built yet: turn a web page or an HTML file into a PDF.",
   "sign-pdf": "Not built yet: place a drawn or uploaded signature on a PDF.",
-  "watermark-pdf": "Not built yet: stamp text or an image over PDF pages.",
+  "watermark-pdf": "Stamp text over every page of a PDF.",
   "rotate-pdf": "Rotate all pages or turn pages live, one at a time.",
   "unlock-pdf": "Remove restrictions, or open a locked PDF with its password.",
   "protect-pdf": "Add a password with 256-bit AES encryption.",

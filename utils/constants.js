@@ -59,4 +59,5 @@ export const OPERATION_MODES = new Set([
   "compress",
   "repair",
   "protect",
+  "watermark",
 ]);

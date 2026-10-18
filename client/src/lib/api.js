@@ -13,6 +13,9 @@ export async function submitProcess({
   pages = "all",
   password = "",
   rotations = "",
+  watermarkText = "",
+  watermarkAngle = "45",
+  watermarkOpacity = "0.35",
 }) {
   const formData = new FormData();
   formData.append("operation", operation);
@@ -39,6 +42,12 @@ export async function submitProcess({
 
   if (operation === "unlock" && password) {
     formData.append("password", password);
+  }
+
+  if (operation === "watermark") {
+    formData.append("watermarkText", watermarkText);
+    formData.append("watermarkAngle", String(watermarkAngle));
+    formData.append("watermarkOpacity", String(watermarkOpacity));
   }
 
   files.forEach((file) => {

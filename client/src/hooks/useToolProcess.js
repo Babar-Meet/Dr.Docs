@@ -46,6 +46,9 @@ export default function useToolProcess(tool) {
   const [rotateAllDelta, setRotateAllDelta] = useState(0);
   const [pageRotations, setPageRotations] = useState({});
   const [password, setPassword] = useState("");
+  const [watermarkText, setWatermarkText] = useState("");
+  const [watermarkAngle, setWatermarkAngle] = useState("45");
+  const [watermarkOpacity, setWatermarkOpacity] = useState("35");
   const [isProcessing, setIsProcessing] = useState(false);
   const [status, setStatus] = useState(null);
   // Set on the first click of the post-run Download button. Downloads are
@@ -370,6 +373,23 @@ export default function useToolProcess(tool) {
       }
     }
 
+    if (tool.operation === "watermark") {
+      const allPdf = selectedFiles.every(
+        (file) => getExtension(file.name) === ".pdf",
+      );
+      if (!allPdf) {
+        setFailure("Unsupported file", "Watermark supports PDF files only.");
+        return;
+      }
+      if (!watermarkText.trim()) {
+        setFailure(
+          "Unsupported file",
+          "Enter text to watermark the PDF.",
+        );
+        return;
+      }
+    }
+
     setIsProcessing(true);
     setStatus(null);
 
@@ -395,6 +415,9 @@ export default function useToolProcess(tool) {
         pages: "all",
         password: password.trim() || "",
         rotations: rotationsPayload,
+        watermarkText: watermarkText.trim(),
+        watermarkAngle,
+        watermarkOpacity: String(Number(watermarkOpacity) / 100),
       });
 
       if (!ok) {
@@ -466,6 +489,12 @@ export default function useToolProcess(tool) {
     resetPageRotations,
     password,
     setPassword,
+    watermarkText,
+    setWatermarkText,
+    watermarkAngle,
+    setWatermarkAngle,
+    watermarkOpacity,
+    setWatermarkOpacity,
     isProcessing,
     status,
     resultDownloaded,
@@ -479,6 +508,7 @@ export default function useToolProcess(tool) {
       rejectedCount === 0 &&
       !isProcessing &&
       (tool.operation !== "protect" || password.trim() !== "") &&
+      (tool.operation !== "watermark" || watermarkText.trim() !== "") &&
       (tool.operation !== "rotate" || isRotateRunnable()),
     onPickFiles,
     onDrop,

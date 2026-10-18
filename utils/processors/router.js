@@ -36,6 +36,7 @@ import {
 import { mergePdfFiles, splitPdfByRanges } from "./mergeSplitProcessor.js";
 import { runOcrExtraction } from "./ocrProcessor.js";
 import { rotatePdfPages } from "./rotateProcessor.js";
+import { watermarkPdf } from "./watermarkProcessor.js";
 
 function unsupportedFile(
   reason = "This operation is not available for this file type",
@@ -319,6 +320,9 @@ export async function processFile({
   pages,
   password,
   rotations,
+  watermarkText,
+  watermarkAngle,
+  watermarkOpacity,
   inputFiles = [],
   outputBasePath,
   workDir,
@@ -519,6 +523,46 @@ export async function processFile({
     }
     return {
       message: `Protected ${outputs.length} PDF(s) with a password.`,
+      outputs,
+    };
+  }
+
+  if (normalizedOperation === "watermark") {
+    const outputs = [];
+    for (let index = 0; index < files.length; index += 1) {
+      const file = files[index];
+      const fileType = detectFileType(file.originalName, file.mimeType);
+      if (!fileType || fileType.extension !== ".pdf") {
+        throw unsupportedFile("Watermark supports PDF files only.");
+      }
+      const perFileBase = createPerFileOutputBase(
+        outputBasePath,
+        index,
+        file.originalName,
+      );
+      const outputPath = createOutputPath(perFileBase, ".pdf");
+      await watermarkPdf({
+        inputPath: file.path,
+        outputPath,
+        text: watermarkText,
+        angle: watermarkAngle,
+        opacity: watermarkOpacity,
+      });
+      await ensureOutputExists(outputPath);
+      const base = sanitizeBaseName(path.parse(file.originalName).name);
+      outputs.push(
+        createDescriptor({
+          outputPath,
+          outputExtension: ".pdf",
+          sourceName: file.originalName,
+          outputName: `${base}_watermark.pdf`,
+          detectedType: "PDF",
+          message: "PDF watermarked successfully.",
+        }),
+      );
+    }
+    return {
+      message: `Watermarked ${outputs.length} PDF(s).`,
       outputs,
     };
   }

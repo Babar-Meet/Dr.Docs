@@ -36,6 +36,7 @@ function ToolRuntime({ tool }) {
     "rotate",
     "protect",
     "unlock",
+    "watermark",
   ].includes(tool.operation);
   const hasResult = Boolean(state.resultDownloadUrl);
 

@@ -4,6 +4,7 @@ import SplitOptions from "./SplitOptions.jsx";
 import RotateOptions from "./RotateOptions.jsx";
 import ProtectOptions from "./ProtectOptions.jsx";
 import UnlockOptions from "./UnlockOptions.jsx";
+import WatermarkOptions from "./WatermarkOptions.jsx";
 
 // ToolRecord.kind is "info" for compress, ocr and repair; those tools
 // have no selectable options, so they render no panel here. Their per-engine
@@ -81,6 +82,19 @@ export default function OptionsPanel({
       <UnlockOptions
         password={state.password}
         setPassword={state.setPassword}
+      />
+    );
+  }
+
+  if (resolvedKind === "watermark") {
+    return (
+      <WatermarkOptions
+        watermarkText={state.watermarkText}
+        setWatermarkText={state.setWatermarkText}
+        watermarkAngle={state.watermarkAngle}
+        setWatermarkAngle={state.setWatermarkAngle}
+        watermarkOpacity={state.watermarkOpacity}
+        setWatermarkOpacity={state.setWatermarkOpacity}
       />
     );
   }

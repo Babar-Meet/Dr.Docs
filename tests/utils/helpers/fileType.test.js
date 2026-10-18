@@ -177,11 +177,11 @@ describe("fileType helpers", () => {
       assert.equal(isValidOperation("unlock "), false); // not trimmed lowercased with space? impl does (operation||"").toLowerCase() no trim, so "unlock " false
       assert.equal(isValidOperation("  "), false);
     });
-    it("explicitly contains unlock|convert|merge|split|ocr|rotate|compress|repair|protect", () => {
-      const expected = ["unlock", "convert", "merge", "split", "ocr", "rotate", "compress", "repair", "protect"];
+    it("explicitly contains unlock|convert|merge|split|ocr|rotate|compress|repair|protect|watermark", () => {
+      const expected = ["unlock", "convert", "merge", "split", "ocr", "rotate", "compress", "repair", "protect", "watermark"];
       for (const e of expected) assert.equal(OPERATION_MODES.has(e), true, `OPERATION_MODES lost ${e}`);
       for (const op of OPERATION_MODES) assert.equal(expected.includes(op), true, `unexpected operation ${op}`);
-      assert.equal(OPERATION_MODES.size, 9);
+      assert.equal(OPERATION_MODES.size, 10);
     });
   });
 
