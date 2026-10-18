@@ -44,9 +44,52 @@ function Cell({ position, position0, setPageNumberPosition }) {
   );
 }
 
+// A white page mock: the number sits at the same spot the real stamp will
+// land on, scaled from the 595 x 842 pt reference page to the block. The
+// margin value is in PDF points, changed by the slider next to it.
+function PagePreview({ position, margin }) {
+  const anchor = {};
+  if (position.startsWith("top")) {
+    anchor.top = `${(margin / 842) * 100}%`;
+  } else if (position.startsWith("middle")) {
+    anchor.top = "50%";
+  } else {
+    anchor.bottom = `${(margin / 842) * 100}%`;
+  }
+
+  if (position.endsWith("left")) {
+    anchor.left = `${(margin / 595) * 100}%`;
+  } else if (position.endsWith("right")) {
+    anchor.right = `${(margin / 595) * 100}%`;
+  } else {
+    anchor.left = "50%";
+  }
+
+  const centering = [];
+  if (position.startsWith("middle")) centering.push("translateY(-50%)");
+  if (position.endsWith("center")) centering.push("translateX(-50%)");
+
+  return (
+    <div className="relative h-44 w-32 shrink-0 overflow-hidden rounded-[5px] border border-borderDark bg-white">
+      <span
+        aria-hidden="true"
+        className="absolute font-body text-[11px] font-bold leading-none text-[#262626]"
+        style={{
+          ...anchor,
+          transform: centering.length > 0 ? centering.join(" ") : undefined,
+        }}
+      >
+        1
+      </span>
+    </div>
+  );
+}
+
 export default function PageNumbersOptions({
   pageNumberPosition,
   setPageNumberPosition,
+  pageNumberMargin,
+  setPageNumberMargin,
 }) {
   return (
     <Panel>
@@ -63,10 +106,38 @@ export default function PageNumbersOptions({
           />
         ))}
       </div>
-      <p className="mt-3 font-body text-xs text-muted">
-        Numbers 1, 2, 3 start on the first page. The stamp is small dark gray
-        text at the chosen spot, and the same spot is used on every page.
-      </p>
+
+      <div className="mt-4 flex items-start gap-4">
+        <PagePreview
+          position={pageNumberPosition}
+          margin={Number(pageNumberMargin)}
+        />
+        <div className="min-w-0 flex-1">
+          <p className="font-display text-[12px] font-semibold uppercase tracking-[0.08em] text-muted">
+            Margin From Edge
+          </p>
+          <div className="mt-3 flex items-center gap-3">
+            <input
+              type="range"
+              min="0"
+              max="100"
+              step="1"
+              value={pageNumberMargin}
+              onChange={(event) => setPageNumberMargin(event.target.value)}
+              className="w-full accent-orange"
+              aria-label="Page number margin in points"
+            />
+            <span className="w-14 shrink-0 text-right font-mono text-[12px] text-content">
+              {pageNumberMargin} pt
+            </span>
+          </div>
+          <p className="mt-3 font-body text-xs text-muted">
+            The preview shows where the number lands. The margin is the
+            distance from the chosen edge, in points, so 10 pt sits exactly
+            ten points above the bottom.
+          </p>
+        </div>
+      </div>
     </Panel>
   );
 }

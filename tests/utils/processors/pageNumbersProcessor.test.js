@@ -95,6 +95,77 @@ describe("pageNumbersProcessor", () => {
     }
   });
 
+  async function numberTransforms(bytes) {
+    const doc = await getDocument({ data: new Uint8Array(bytes) }).promise;
+    const items = [];
+    for (let pageNumber = 1; pageNumber <= doc.numPages; pageNumber += 1) {
+      const page = await doc.getPage(pageNumber);
+      const content = await page.getTextContent();
+      for (const item of content.items) {
+        if (item.str.trim() !== "") {
+          items.push({
+            page: pageNumber,
+            x: item.transform[4],
+            y: item.transform[5],
+          });
+        }
+      }
+    }
+    await doc.destroy();
+    return items;
+  }
+
+  it("places the number at the requested margin distance from the edge", async () => {
+    const work = path.join(TMP_ROOT, "margin");
+    await fs.ensureDir(work);
+    const input = await makeValidPdf(work, "in.pdf");
+    const out = path.join(work, "out.pdf");
+    await pageNumberPdf({
+      inputPath: input,
+      outputPath: out,
+      position: "bottom-center",
+      margin: "40",
+    });
+    const items = await numberTransforms(await fs.readFile(out));
+    assert.equal(items.length, 1);
+    // Baseline sits exactly 40 points above the page bottom, centered on the
+    // 200 point wide test page (Helvetica "1" is about 6.1 points wide, so
+    // the left edge is around 96.9).
+    assert.ok(Math.abs(items[0].y - 40) < 1, `y was ${items[0].y}`);
+    assert.ok(Math.abs(items[0].x - 96.94) < 2, `x was ${items[0].x}`);
+  });
+
+  it("keeps the default margin when the field is absent", async () => {
+    const work = path.join(TMP_ROOT, "margin-default");
+    await fs.ensureDir(work);
+    const input = await makeValidPdf(work, "in.pdf");
+    const out = path.join(work, "out.pdf");
+    await pageNumberPdf({
+      inputPath: input,
+      outputPath: out,
+      position: "bottom-center",
+    });
+    const items = await numberTransforms(await fs.readFile(out));
+    assert.ok(Math.abs(items[0].y - 24) < 1, `y was ${items[0].y}`);
+  });
+
+  it("rejects a margin outside 0 to 100", async () => {
+    const work = path.join(TMP_ROOT, "margin-invalid");
+    await fs.ensureDir(work);
+    const input = await makeValidPdf(work, "in.pdf");
+    const out = path.join(work, "out.pdf");
+    for (const bad of ["120", "-5", "abc"]) {
+      await assert.rejects(
+        () => pageNumberPdf({ inputPath: input, outputPath: out, position: "bottom-center", margin: bad }),
+        (err) => {
+          assert.equal(err.code, "UNSUPPORTED_FILE");
+          assert.match(err.details?.reason || "", /^Invalid page number margin/);
+          return true;
+        },
+      );
+    }
+  });
+
   it("rejects an unknown position", async () => {
     const work = path.join(TMP_ROOT, "bad-position");
     await fs.ensureDir(work);

@@ -50,6 +50,7 @@ export default function useToolProcess(tool) {
   const [watermarkAngle, setWatermarkAngle] = useState("45");
   const [watermarkOpacity, setWatermarkOpacity] = useState("35");
   const [pageNumberPosition, setPageNumberPosition] = useState("bottom-center");
+  const [pageNumberMargin, setPageNumberMargin] = useState("24");
   const [isProcessing, setIsProcessing] = useState(false);
   const [status, setStatus] = useState(null);
   // Set on the first click of the post-run Download button. Downloads are
@@ -276,6 +277,13 @@ export default function useToolProcess(tool) {
     setPassword("");
   }
 
+  // Start over clears the run, not the files: the picked PDFs stay, so the
+  // user can change the options and run again without re-uploading.
+  function clearRun() {
+    setStatus(null);
+    setResultDownloaded(false);
+  }
+
   async function submit() {
     if (isProcessing) return;
 
@@ -433,6 +441,7 @@ export default function useToolProcess(tool) {
         watermarkAngle,
         watermarkOpacity: String(Number(watermarkOpacity) / 100),
         pageNumberPosition,
+        pageNumberMargin,
       });
 
       if (!ok) {
@@ -512,6 +521,8 @@ export default function useToolProcess(tool) {
     setWatermarkOpacity,
     pageNumberPosition,
     setPageNumberPosition,
+    pageNumberMargin,
+    setPageNumberMargin,
     isProcessing,
     status,
     resultDownloaded,
@@ -532,6 +543,7 @@ export default function useToolProcess(tool) {
     onDragOver,
     onDragLeave,
     clearFiles,
+    clearRun,
     reorderFiles,
     removeFile,
     submit,

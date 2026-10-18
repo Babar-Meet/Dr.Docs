@@ -23,6 +23,7 @@ export const PAGE_NUMBER_POSITIONS = [
 ];
 
 const MARGIN = 24;
+const MAX_MARGIN = 100;
 const FONT_SIZE = 11;
 
 function toReason(error) {
@@ -35,6 +36,22 @@ function isPasswordError(reason) {
 
 function invalid(reason) {
   return new AppError("Unsupported file", "UNSUPPORTED_FILE", 400, { reason });
+}
+
+function parsePageNumberMargin(raw) {
+  // Absent or empty keeps today's built-in margin, so existing callers and
+  // older clients behave exactly as before.
+  if (raw === undefined || raw === null || String(raw).trim() === "") {
+    return MARGIN;
+  }
+  const normalized = String(raw).trim();
+  const value = Number.parseFloat(normalized);
+  if (Number.isNaN(value) || value < 0 || value > MAX_MARGIN) {
+    throw invalid(
+      `Invalid page number margin: ${normalized}. Use a number from 0 to ${MAX_MARGIN}.`,
+    );
+  }
+  return value;
 }
 
 function parsePageNumberPosition(raw) {
@@ -70,7 +87,7 @@ async function loadPdfFromPath(inputPath) {
   }
 }
 
-function drawNumber(page, { font, pageNumber, position }) {
+function drawNumber(page, { font, pageNumber, position, margin }) {
   const { width, height } = page.getSize();
   const label = String(pageNumber);
   const textWidth = font.widthOfTextAtSize(label, FONT_SIZE);
@@ -78,19 +95,19 @@ function drawNumber(page, { font, pageNumber, position }) {
   let x;
   let y;
   if (position.endsWith("left")) {
-    x = MARGIN;
+    x = margin;
   } else if (position.endsWith("right")) {
-    x = width - MARGIN - textWidth;
+    x = width - margin - textWidth;
   } else {
     x = (width - textWidth) / 2;
   }
 
   if (position.startsWith("top")) {
-    y = height - MARGIN - FONT_SIZE;
+    y = height - margin - FONT_SIZE;
   } else if (position.startsWith("middle")) {
     y = (height - FONT_SIZE) / 2;
   } else {
-    y = MARGIN;
+    y = margin;
   }
 
   page.drawText(label, {
@@ -103,8 +120,14 @@ function drawNumber(page, { font, pageNumber, position }) {
   });
 }
 
-export async function pageNumberPdf({ inputPath, outputPath, position }) {
+export async function pageNumberPdf({
+  inputPath,
+  outputPath,
+  position,
+  margin,
+}) {
   const stampPosition = parsePageNumberPosition(position);
+  const stampMargin = parsePageNumberMargin(margin);
 
   const pdfDoc = await loadPdfFromPath(inputPath);
   if (pdfDoc.getPageCount() === 0) {
@@ -121,6 +144,7 @@ export async function pageNumberPdf({ inputPath, outputPath, position }) {
         font,
         pageNumber: index + 1,
         position: stampPosition,
+        margin: stampMargin,
       });
     }
 

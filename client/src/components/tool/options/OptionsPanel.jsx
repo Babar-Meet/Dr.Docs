@@ -105,6 +105,8 @@ export default function OptionsPanel({
       <PageNumbersOptions
         pageNumberPosition={state.pageNumberPosition}
         setPageNumberPosition={state.setPageNumberPosition}
+        pageNumberMargin={state.pageNumberMargin}
+        setPageNumberMargin={state.setPageNumberMargin}
       />
     );
   }

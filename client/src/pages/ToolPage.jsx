@@ -2,6 +2,7 @@ import {
   CheckCircle2,
   Download,
   LoaderCircle,
+  RefreshCw,
   RotateCcw,
   WandSparkles,
 } from "lucide-react";
@@ -113,7 +114,16 @@ function ToolRuntime({ tool }) {
                 </a>
                 <button
                   type="button"
-                  onClick={state.clearFiles}
+                  onClick={state.submit}
+                  disabled={state.isProcessing}
+                  className="inline-flex items-center justify-center gap-2 rounded-[5px] border border-borderStrong bg-deep px-5 py-3.5 font-display text-[14px] font-bold leading-none text-offWhite transition hover:bg-elevated hover:text-content disabled:cursor-default disabled:text-muted"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  Process again
+                </button>
+                <button
+                  type="button"
+                  onClick={state.clearRun}
                   className="inline-flex items-center justify-center gap-2 rounded-[5px] border border-borderStrong bg-deep px-5 py-3.5 font-display text-[14px] font-bold leading-none text-offWhite transition hover:bg-elevated hover:text-content"
                 >
                   <RotateCcw className="h-4 w-4" />
