@@ -16,6 +16,7 @@ export async function submitProcess({
   watermarkText = "",
   watermarkAngle = "45",
   watermarkOpacity = "0.35",
+  pageNumberPosition = "bottom-center",
 }) {
   const formData = new FormData();
   formData.append("operation", operation);
@@ -48,6 +49,10 @@ export async function submitProcess({
     formData.append("watermarkText", watermarkText);
     formData.append("watermarkAngle", String(watermarkAngle));
     formData.append("watermarkOpacity", String(watermarkOpacity));
+  }
+
+  if (operation === "pagenumbers") {
+    formData.append("pageNumberPosition", pageNumberPosition);
   }
 
   files.forEach((file) => {

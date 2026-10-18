@@ -37,6 +37,7 @@ function ToolRuntime({ tool }) {
     "protect",
     "unlock",
     "watermark",
+    "pagenumbers",
   ].includes(tool.operation);
   const hasResult = Boolean(state.resultDownloadUrl);
 

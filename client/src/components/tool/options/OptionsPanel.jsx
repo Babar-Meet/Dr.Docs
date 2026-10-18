@@ -5,6 +5,7 @@ import RotateOptions from "./RotateOptions.jsx";
 import ProtectOptions from "./ProtectOptions.jsx";
 import UnlockOptions from "./UnlockOptions.jsx";
 import WatermarkOptions from "./WatermarkOptions.jsx";
+import PageNumbersOptions from "./PageNumbersOptions.jsx";
 
 // ToolRecord.kind is "info" for compress, ocr and repair; those tools
 // have no selectable options, so they render no panel here. Their per-engine
@@ -95,6 +96,15 @@ export default function OptionsPanel({
         setWatermarkAngle={state.setWatermarkAngle}
         watermarkOpacity={state.watermarkOpacity}
         setWatermarkOpacity={state.setWatermarkOpacity}
+      />
+    );
+  }
+
+  if (resolvedKind === "pagenumbers") {
+    return (
+      <PageNumbersOptions
+        pageNumberPosition={state.pageNumberPosition}
+        setPageNumberPosition={state.setPageNumberPosition}
       />
     );
   }

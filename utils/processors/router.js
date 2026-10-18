@@ -37,6 +37,7 @@ import { mergePdfFiles, splitPdfByRanges } from "./mergeSplitProcessor.js";
 import { runOcrExtraction } from "./ocrProcessor.js";
 import { rotatePdfPages } from "./rotateProcessor.js";
 import { watermarkPdf } from "./watermarkProcessor.js";
+import { pageNumberPdf } from "./pageNumbersProcessor.js";
 
 function unsupportedFile(
   reason = "This operation is not available for this file type",
@@ -323,6 +324,7 @@ export async function processFile({
   watermarkText,
   watermarkAngle,
   watermarkOpacity,
+  pageNumberPosition,
   inputFiles = [],
   outputBasePath,
   workDir,
@@ -563,6 +565,44 @@ export async function processFile({
     }
     return {
       message: `Watermarked ${outputs.length} PDF(s).`,
+      outputs,
+    };
+  }
+
+  if (normalizedOperation === "pagenumbers") {
+    const outputs = [];
+    for (let index = 0; index < files.length; index += 1) {
+      const file = files[index];
+      const fileType = detectFileType(file.originalName, file.mimeType);
+      if (!fileType || fileType.extension !== ".pdf") {
+        throw unsupportedFile("Page numbers supports PDF files only.");
+      }
+      const perFileBase = createPerFileOutputBase(
+        outputBasePath,
+        index,
+        file.originalName,
+      );
+      const outputPath = createOutputPath(perFileBase, ".pdf");
+      await pageNumberPdf({
+        inputPath: file.path,
+        outputPath,
+        position: pageNumberPosition,
+      });
+      await ensureOutputExists(outputPath);
+      const base = sanitizeBaseName(path.parse(file.originalName).name);
+      outputs.push(
+        createDescriptor({
+          outputPath,
+          outputExtension: ".pdf",
+          sourceName: file.originalName,
+          outputName: `${base}_numbered.pdf`,
+          detectedType: "PDF",
+          message: "Page numbers added successfully.",
+        }),
+      );
+    }
+    return {
+      message: `Numbered ${outputs.length} PDF(s).`,
       outputs,
     };
   }

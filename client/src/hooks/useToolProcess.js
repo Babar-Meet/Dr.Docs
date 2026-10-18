@@ -49,6 +49,7 @@ export default function useToolProcess(tool) {
   const [watermarkText, setWatermarkText] = useState("");
   const [watermarkAngle, setWatermarkAngle] = useState("45");
   const [watermarkOpacity, setWatermarkOpacity] = useState("35");
+  const [pageNumberPosition, setPageNumberPosition] = useState("bottom-center");
   const [isProcessing, setIsProcessing] = useState(false);
   const [status, setStatus] = useState(null);
   // Set on the first click of the post-run Download button. Downloads are
@@ -390,6 +391,19 @@ export default function useToolProcess(tool) {
       }
     }
 
+    if (tool.operation === "pagenumbers") {
+      const allPdf = selectedFiles.every(
+        (file) => getExtension(file.name) === ".pdf",
+      );
+      if (!allPdf) {
+        setFailure(
+          "Unsupported file",
+          "Page numbers supports PDF files only.",
+        );
+        return;
+      }
+    }
+
     setIsProcessing(true);
     setStatus(null);
 
@@ -418,6 +432,7 @@ export default function useToolProcess(tool) {
         watermarkText: watermarkText.trim(),
         watermarkAngle,
         watermarkOpacity: String(Number(watermarkOpacity) / 100),
+        pageNumberPosition,
       });
 
       if (!ok) {
@@ -495,6 +510,8 @@ export default function useToolProcess(tool) {
     setWatermarkAngle,
     watermarkOpacity,
     setWatermarkOpacity,
+    pageNumberPosition,
+    setPageNumberPosition,
     isProcessing,
     status,
     resultDownloaded,

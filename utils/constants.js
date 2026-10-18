@@ -60,4 +60,5 @@ export const OPERATION_MODES = new Set([
   "repair",
   "protect",
   "watermark",
+  "pagenumbers",
 ]);

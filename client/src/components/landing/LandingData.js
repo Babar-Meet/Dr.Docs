@@ -88,7 +88,7 @@ export const TOOL_SENTENCES = {
   "organize-pdf": "Not built yet: reorder and delete pages of one PDF.",
   "pdf-to-pdfa": "Not built yet: rewrite a PDF into the PDF/A archive format.",
   "repair-pdf": "Rebuild a damaged file and keep its original format.",
-  "add-page-numbers": "Not built yet: stamp page numbers onto PDF pages.",
+  "add-page-numbers": "Stamp 1, 2, 3 in nine positions.",
   "scan-to-pdf": "Not built yet: turn phone photos of documents into one PDF.",
   "ocr-pdf": "Extract text from PDF, Office, and image files as TXT.",
   "compare-pdf": "Not built yet: show what changed between two PDFs.",
