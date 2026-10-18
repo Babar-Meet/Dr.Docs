@@ -1,4 +1,5 @@
 import {
+  ArrowRightLeft,
   ClipboardList,
   Crop,
   Droplet,
@@ -597,6 +598,26 @@ export const GENERIC_CONVERT = {
   detail:
     "Batch convert supports Office and image workflows, including PDF to DOCX/PPTX/XLSX where supported by LibreOffice.",
   kind: "convert",
+  sourceExtensions: null,
+  targetFormat: null,
+  multiple: true,
+  accept: "",
+};
+
+// The Conversions page (/convert) groups every pair by source format. Not a
+// tool page: it sits in the header menu as an entry point for the page. The
+// TagBar Convert chip opens it too.
+export const CONVERSIONS_HUB = {
+  id: "conversions",
+  label: "All conversions",
+  slug: "convert",
+  group: "convert",
+  icon: ArrowRightLeft,
+  available: true,
+  operation: null,
+  help: "One page with every possible conversion by source format",
+  detail: "PDF to any, Word to any, and every other source section in one place.",
+  kind: "hub",
   sourceExtensions: null,
   targetFormat: null,
   multiple: true,
