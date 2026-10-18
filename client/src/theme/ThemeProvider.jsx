@@ -1,8 +1,8 @@
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 
 const THEMES = [
-  { value: "midnight", label: "Midnight", title: "Midnight Orange - signature dark, orange action" },
-  { value: "white", label: "White", title: "Total White - light, clean" },
+  { value: "midnight", label: "Midnight", title: "Dark theme" },
+  { value: "white", label: "White", title: "Light theme" },
 ];
 
 function getInitialTheme() {

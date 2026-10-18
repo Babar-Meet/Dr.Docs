@@ -318,6 +318,7 @@ export async function processFile({
   rotationAngle,
   pages,
   password,
+  rotations,
   inputFiles = [],
   outputBasePath,
   workDir,
@@ -422,6 +423,7 @@ export async function processFile({
       outputPath,
       rotationAngle,
       pages,
+      rotations,
     });
     await ensureOutputExists(outputPath);
 

@@ -82,7 +82,7 @@ export const TOOL_SENTENCES = {
   "html-to-pdf": "Not built yet: turn a web page or an HTML file into a PDF.",
   "sign-pdf": "Not built yet: place a drawn or uploaded signature on a PDF.",
   "watermark-pdf": "Not built yet: stamp text or an image over PDF pages.",
-  "rotate-pdf": "Rotate all pages or a page selection of a PDF.",
+  "rotate-pdf": "Rotate all pages or turn pages live, one at a time.",
   "unlock-pdf": "Remove edit and copy restrictions from a PDF.",
   "protect-pdf": "Add a password with 256-bit AES encryption.",
   "organize-pdf": "Not built yet: reorder and delete pages of one PDF.",

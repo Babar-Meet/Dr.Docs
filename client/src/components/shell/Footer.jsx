@@ -6,11 +6,10 @@ export default function Footer() {
       <footer className="mt-8 border-t border-borderDark pt-4">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <p className="font-mono text-[11px] text-muted">
-            Dr.Docs - Midnight Orange - Black structure + white content + gray hierarchy + orange
-            action
+            Dr.Docs. Free PDF and document tools.
           </p>
           <p className="font-mono text-[11px] text-muted">
-            DESIGN.md / THEME.md is the single source of truth
+            Files are deleted after processing.
           </p>
         </div>
       </footer>

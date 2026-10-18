@@ -52,10 +52,14 @@ export default function OptionsPanel({
   if (resolvedKind === "rotate") {
     return (
       <RotateOptions
-        rotationAngle={state.rotationAngle}
-        setRotationAngle={state.setRotationAngle}
-        pages={state.pages}
-        setPages={state.setPages}
+        mode={state.rotateMode}
+        setMode={state.setRotateMode}
+        allDelta={state.rotateAllDelta}
+        onRotateAll={state.pressRotateAll}
+        pageRotations={state.pageRotations}
+        setPageRotation={state.setPageRotation}
+        onResetPages={state.resetPageRotations}
+        file={files[0] || null}
         pdfPages={singlePdfPages}
       />
     );

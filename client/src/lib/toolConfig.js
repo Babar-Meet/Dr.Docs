@@ -443,9 +443,9 @@ export const TOOLS = [
     icon: RotateCw,
     available: true,
     operation: "rotate",
-    help: "Rotate PDF pages 90/180/270",
+    help: "Rotate all pages or pick pages with a live preview",
     detail:
-      "Fix sideways phone scans - rotate all pages or select pages like 1,3-5. Encrypted PDFs never bypassed.",
+      "Fix sideways phone scans - turn all pages with one press, or open Choose pages and turn any page left or right with a live preview. Encrypted PDFs never bypassed.",
     kind: "rotate",
     sourceExtensions: [".pdf"],
     targetFormat: null,

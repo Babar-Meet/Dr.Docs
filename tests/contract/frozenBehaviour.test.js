@@ -934,6 +934,110 @@ describe("frozen core contract", () => {
         "UNSUPPORTED_FILE"
       );
     });
+
+    it("rotations list rotates each page by its own delta and leaves the rest untouched", async () => {
+      const work = await newWork("rotate-per-page");
+      const pdf = await makePdf(work, "rotate.pdf", 4);
+      const result = await runProcess(
+        {
+          operation: "rotate",
+          rotations: "1:270,3:90,4:180",
+          inputFiles: [mkInput(pdf, "rotate.pdf", "application/pdf")],
+        },
+        work
+      );
+      await assertResultShape(result);
+      const doc = await PDFDocument.load(await fs.readFile(result.outputs[0].outputPath));
+      assert.deepEqual(
+        doc.getPages().map((page) => ((page.getRotation().angle % 360) + 360) % 360),
+        [270, 0, 90, 180]
+      );
+    });
+
+    it("per-page rotations win over rotationAngle and pages when both arrive", async () => {
+      const work = await newWork("rotate-both-fields");
+      const pdf = await makePdf(work, "rotate.pdf", 2);
+      const result = await runProcess(
+        {
+          operation: "rotate",
+          rotationAngle: "90",
+          pages: "1",
+          rotations: "2:180",
+          inputFiles: [mkInput(pdf, "rotate.pdf", "application/pdf")],
+        },
+        work
+      );
+      await assertResultShape(result);
+      const doc = await PDFDocument.load(await fs.readFile(result.outputs[0].outputPath));
+      assert.deepEqual(
+        doc.getPages().map((page) => ((page.getRotation().angle % 360) + 360) % 360),
+        [0, 180]
+      );
+    });
+
+    it("per-page rotations reject a page past the last page with UNSUPPORTED_FILE 400", async () => {
+      const work = await newWork("rotate-per-page-past");
+      const pdf = await makePdf(work, "rotate.pdf", 2);
+      await assertRejected(
+        runProcess(
+          {
+            operation: "rotate",
+            rotations: "3:90",
+            inputFiles: [mkInput(pdf, "rotate.pdf", "application/pdf")],
+          },
+          work
+        ),
+        "UNSUPPORTED_FILE"
+      );
+    });
+
+    it("per-page rotations reject an angle outside 90, 180 and 270", async () => {
+      const work = await newWork("rotate-per-page-angle");
+      const pdf = await makePdf(work, "rotate.pdf", 2);
+      await assertRejected(
+        runProcess(
+          {
+            operation: "rotate",
+            rotations: "1:45",
+            inputFiles: [mkInput(pdf, "rotate.pdf", "application/pdf")],
+          },
+          work
+        ),
+        "UNSUPPORTED_FILE"
+      );
+    });
+
+    it("per-page rotations reject a page listed twice", async () => {
+      const work = await newWork("rotate-per-page-dup");
+      const pdf = await makePdf(work, "rotate.pdf", 3);
+      await assertRejected(
+        runProcess(
+          {
+            operation: "rotate",
+            rotations: "1:90,1:180",
+            inputFiles: [mkInput(pdf, "rotate.pdf", "application/pdf")],
+          },
+          work
+        ),
+        "UNSUPPORTED_FILE"
+      );
+    });
+
+    it("per-page rotations reject a malformed token", async () => {
+      const work = await newWork("rotate-per-page-bad-token");
+      const pdf = await makePdf(work, "rotate.pdf", 3);
+      await assertRejected(
+        runProcess(
+          {
+            operation: "rotate",
+            rotations: "one:90",
+            inputFiles: [mkInput(pdf, "rotate.pdf", "application/pdf")],
+          },
+          work
+        ),
+        "UNSUPPORTED_FILE"
+      );
+    });
   });
 
   describe("compress is lossless and PDF only", () => {

@@ -12,6 +12,7 @@ export async function submitProcess({
   rotationAngle = "90",
   pages = "all",
   password = "",
+  rotations = "",
 }) {
   const formData = new FormData();
   formData.append("operation", operation);
@@ -27,6 +28,9 @@ export async function submitProcess({
   if (operation === "rotate") {
     formData.append("rotationAngle", String(rotationAngle));
     formData.append("pages", pages.trim() || "all");
+    if (rotations.trim()) {
+      formData.append("rotations", rotations.trim());
+    }
   }
 
   if (operation === "protect") {

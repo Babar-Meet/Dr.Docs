@@ -4,8 +4,10 @@ import { CONVERSION_TARGETS } from "../lib/conversionTargets";
 import { fileKey, getExtension, MAX_FILE_SIZE_BYTES } from "../lib/fileUtils";
 import { inspectFile, KNOWN_EXTENSIONS } from "../lib/fileInspect";
 
-const ROTATION_ANGLES = ["90", "180", "270"];
-const PAGE_RANGE_PATTERN = /^(\d+(-\d+)?)(\s*,\s*\d+(-\d+)?)*$/;
+// The rotate tool has two UI modes. "all" rotates every page in one press and
+// maps to the frozen rotationAngle plus pages=all request fields. "pages" is
+// the per-page preview: the browser tracks a rotation per page and maps it to
+// the rotations field as page:angle pairs. Degrees are never shown in the UI.
 
 // Ordered intersection of the selected files' conversion targets. An empty list
 // means either no files, or at least one file with no known target set.
@@ -36,8 +38,11 @@ export default function useToolProcess(tool) {
   const [dragActive, setDragActive] = useState(false);
   const [targetFormat, setTargetFormat] = useState(() => tool.targetFormat || "");
   const [pageRanges, setPageRanges] = useState("");
-  const [rotationAngle, setRotationAngle] = useState("90");
-  const [pages, setPages] = useState("all");
+  // Rotate tool state: UI mode plus one net rotation value per mode. Net
+  // deltas are 0 (nothing) or 90, 180, 270 clockwise. LEFT maps to 270.
+  const [rotateMode, setRotateMode] = useState("all");
+  const [rotateAllDelta, setRotateAllDelta] = useState(0);
+  const [pageRotations, setPageRotations] = useState({});
   const [password, setPassword] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [status, setStatus] = useState(null);
@@ -103,6 +108,36 @@ export default function useToolProcess(tool) {
     setResultDownloaded(true);
   }
 
+  // One press turns every page a quarter turn. Left is counterclockwise, so
+  // it is 270 net clockwise. Presses accumulate: right twice is a half turn.
+  function pressRotateAll(direction) {
+    setRotateAllDelta((current) => (current + (direction === "left" ? 270 : 90)) % 360);
+  }
+
+  // pageRotations only ever holds non-zero entries; storing a zero deletes.
+  function setPageRotation(pageNumber, delta) {
+    setPageRotations((current) => {
+      const next = { ...current };
+      if (delta) {
+        next[pageNumber] = delta;
+      } else {
+        delete next[pageNumber];
+      }
+      return next;
+    });
+  }
+
+  function resetPageRotations() {
+    setPageRotations({});
+  }
+
+  function isRotateRunnable() {
+    if (rotateMode === "pages") {
+      return Object.keys(pageRotations).length > 0;
+    }
+    return rotateAllDelta !== 0;
+  }
+
   function onPickFiles(fileList) {
     const incomingFiles = Array.from(fileList || []);
     if (incomingFiles.length === 0) return;
@@ -136,6 +171,8 @@ export default function useToolProcess(tool) {
     setInspections(freshInspections);
     setStatus(null);
     setResultDownloaded(false);
+    setRotateAllDelta(0);
+    setPageRotations({});
 
     // Thumbnails and page counts arrive asynchronously, one file at a time.
     for (const file of normalizedFiles) {
@@ -284,23 +321,10 @@ export default function useToolProcess(tool) {
         return;
       }
 
-      if (!ROTATION_ANGLES.includes(String(rotationAngle))) {
+      if (!isRotateRunnable()) {
         setFailure(
           "Unsupported file",
-          "Invalid rotation angle. Supported angles are 90, 180, 270.",
-        );
-        return;
-      }
-
-      const pagesTrimmed = pages.trim();
-      if (
-        pagesTrimmed &&
-        pagesTrimmed.toLowerCase() !== "all" &&
-        !PAGE_RANGE_PATTERN.test(pagesTrimmed)
-      ) {
-        setFailure(
-          "Unsupported file",
-          'Invalid pages value. Use "all" or "1,3-5,8".',
+          "Rotate at least one page before processing.",
         );
         return;
       }
@@ -336,15 +360,28 @@ export default function useToolProcess(tool) {
     setIsProcessing(true);
     setStatus(null);
 
+    const isRotatePages = tool.operation === "rotate" && rotateMode === "pages";
+    const rotationsPayload = isRotatePages
+      ? Object.keys(pageRotations)
+          .map(Number)
+          .sort((a, b) => a - b)
+          .map((page) => `${page}:${pageRotations[page]}`)
+          .join(",")
+      : "";
+    const rotateAnglePayload = tool.operation === "rotate"
+      ? String(rotateAllDelta || "90")
+      : "90";
+
     try {
       const { ok, payload } = await submitProcess({
         operation: tool.operation,
         files: selectedFiles,
         targetFormat,
         pageRanges,
-        rotationAngle,
-        pages,
+        rotationAngle: rotateAnglePayload,
+        pages: "all",
         password: password.trim() || "",
+        rotations: rotationsPayload,
       });
 
       if (!ok) {
@@ -406,10 +443,13 @@ export default function useToolProcess(tool) {
     setTargetFormat,
     pageRanges,
     setPageRanges,
-    rotationAngle,
-    setRotationAngle,
-    pages,
-    setPages,
+    rotateMode,
+    setRotateMode,
+    rotateAllDelta,
+    pressRotateAll,
+    pageRotations,
+    setPageRotation,
+    resetPageRotations,
     password,
     setPassword,
     isProcessing,
@@ -424,7 +464,8 @@ export default function useToolProcess(tool) {
       selectedFiles.length > 0 &&
       rejectedCount === 0 &&
       !isProcessing &&
-      (tool.operation !== "protect" || password.trim() !== ""),
+      (tool.operation !== "protect" || password.trim() !== "") &&
+      (tool.operation !== "rotate" || isRotateRunnable()),
     onPickFiles,
     onDrop,
     onDragOver,

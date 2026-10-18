@@ -10,8 +10,8 @@ export default function ThemeToggle() {
     <button
       type="button"
       onClick={toggleTheme}
-      title={theme === "midnight" ? "Switch to Total White" : "Switch to Midnight Orange"}
-      aria-label={theme === "midnight" ? "Switch to Total White" : "Switch to Midnight Orange"}
+      title={theme === "midnight" ? "Switch to light theme" : "Switch to dark theme"}
+      aria-label={theme === "midnight" ? "Switch to light theme" : "Switch to dark theme"}
       aria-pressed={theme === "white"}
       className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-borderDark bg-panel text-muted transition hover:bg-elevated hover:text-content"
     >

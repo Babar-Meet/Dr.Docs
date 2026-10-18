@@ -2,14 +2,12 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { ChevronDown } from "lucide-react";
 import ThemeToggle from "./ThemeToggle.jsx";
-import { useTheme } from "../../theme/ThemeProvider.jsx";
 import { GENERIC_CONVERT, GROUP_ORDER, TOOL_GROUPS, TOOLS } from "../../lib/toolConfig";
 
 // One grouped menu with every tool, mirroring the reference product's header:
 // brand on the left, a tools dropdown, account actions on the right. Queued
 // tools stay in the menu with a Coming soon mark so the roadmap is visible.
 export default function Header() {
-  const { theme } = useTheme();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
   const location = useLocation();
@@ -54,14 +52,9 @@ export default function Header() {
             <div className="flex h-8 w-8 items-center justify-center rounded-[5px] bg-orange text-sm font-bold text-black">
               D
             </div>
-            <div>
-              <p className="font-display text-[15px] font-bold leading-none tracking-tight text-content">
-                Dr.Docs
-              </p>
-              <p className="font-mono text-[11px] font-normal leading-none text-muted">
-                {theme === "white" ? "TOTAL WHITE" : "MIDNIGHT ORANGE"}
-              </p>
-            </div>
+            <p className="font-display text-[15px] font-bold leading-none tracking-tight text-content">
+              Dr.Docs
+            </p>
           </Link>
         </div>
 
