@@ -772,14 +772,19 @@ badge text is theme-independent on purpose and is not the banned raw `text-white
 for surrounding component text.
 
 Same owner-sanctioned exception, extended to tool tiles on 2026-10-19: tool
-category icons on the landing tiles and in related tool chips are colored by
-category - Organize `#2B579A`, Optimize `#217346`, Convert `#D13438`, Edit
-`#8E44AD`, Security `#B45309`, PDF Intelligence `#0D9488` - replacing the
-monochrome gray lucide icons the owner rejected as not recognizable. The icon
-sits at full hex on an 18 percent tint of itself (the `2E` alpha suffix), one
-fixed value pair per category, byte-identical in both themes. Single source:
-`CATEGORY_COLORS` in `client/src/lib/toolConfig.js`, rendered by `IconChip` in
-`client/src/components/landing/ToolTile.jsx`.
+category icons on the landing tiles are solid document glyphs, replacing the
+monochrome icons and then the tinted-chip first try the owner rejected (a
+colored line icon on an 18 percent tinted square read as recolored leftovers
+of the old UI; the file-type badges were the stated target). The glyph is one
+filled page in the category's fixed hex - Organize `#2B579A`, Optimize
+`#217346`, Convert `#D13438`, Edit `#8E44AD`, Security `#B45309`, PDF
+Intelligence `#0D9488` - with a fold flap at the top right and the tool's own
+action icon knocked out in white, sitting directly on the card with no
+background chip. Same rule as the badges: solid color block, white content,
+byte-identical in both themes. Color source: `CATEGORY_COLORS` in
+`client/src/lib/toolConfig.js`, rendered by `ToolDocGlyph` in
+`client/src/components/icons/ToolDocGlyph.jsx`. Related tool chips keep plain
+category-colored stroke icons at their 16px size, where page art cannot read.
 
 ---
 

@@ -70,12 +70,12 @@ export const GROUP_ORDER = [
   "intelligence",
 ];
 
-// Fixed category icon colors for tool tiles and related tool chips, the same
-// language the format badges use: one hue per family so a tile reads like a
-// category before its label lands. These are fixed hexes, not theme tokens:
-// they are byte-identical in both themes, the owner-sanctioned exception
-// DESIGN.md documents. Icon chips tint this hex at 18 percent (the 2E suffix)
-// for the chip background and use the full color for the icon itself.
+// Fixed category document colors for tool tiles, the same language the
+// format badges use: one hue per family so a tile reads like a category
+// before its label lands. These are fixed hexes, not theme tokens: they are
+// byte-identical in both themes, the owner-sanctioned exception DESIGN.md
+// documents. ToolTile renders them as a solid page glyph with the tool's
+// action stamped in white - no tinted background chips.
 export const CATEGORY_COLORS = {
   organize: "#2B579A",
   optimize: "#217346",
