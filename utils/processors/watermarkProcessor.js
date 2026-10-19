@@ -99,7 +99,9 @@ function clampSize(size) {
 // One stamp size per document: the value scales with the page then is clamped,
 // so every page is covered by the same rule. The diagonal needs a tighter
 // clamp because the rotated stamp is longer than the text itself.
-function stampSize({ pageWidth, pageHeight, unitWidth, angle }) {
+// Exported so the client watermark preview can mirror the same size rule and
+// a test can pin the two together (tests/utils/processors/watermarkStampMirror.test.js).
+export function stampSize({ pageWidth, pageHeight, unitWidth, angle }) {
   if (angle === 45) {
     const rotatedHalf = Math.SQRT1_2;
     const byWidth = (pageWidth * 0.9) / (rotatedHalf * (unitWidth + 1));
