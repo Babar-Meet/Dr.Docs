@@ -67,23 +67,23 @@ export const EXTRAS = ["pdf-to-markdown", "summarize-pdf", "translate-pdf"];
 export const EMPTY_TAGS = ["workflows"];
 
 // Section titles for the grouped landing grid, worded so the tag bar chips
-// and the section headings read the same.
+// and the section headings read the same. The convert category has no entry:
+// the page renders it as the Any To Any block straight from the conversion
+// hub data, not as a flat tool section.
 export const SECTION_TITLES = {
   organize: "Organize PDF",
   optimize: "Optimize PDF",
-  convert: "Convert PDF",
   edit: "Edit PDF",
   security: "PDF Security",
   intelligence: "PDF Intelligence",
 };
 
-// Landing section order. The All view lists the five standard groups in this
-// order; the intelligence queue keeps its own tag and stays out of All,
-// exactly like the flat grid did before.
+// Landing section order for the tool sections. The convert category is not
+// here: the page renders the whole Any To Any block from the conversion hub
+// data instead. Intelligence keeps its own tag and stays out of All.
 const SECTION_ORDER = [
   "organize",
   "optimize",
-  "convert",
   "edit",
   "security",
   "intelligence",
@@ -125,9 +125,12 @@ export const TOOL_SENTENCES = {
   "translate-pdf": "Not built yet: translate a document into another language.",
 };
 
-// One labeled section per category. The All view stacks every standard group
-// in SECTION_ORDER; a tag filter yields exactly that group's section; an
-// empty tag yields no section at all. Sections with no tools do not render.
+// One labeled section per category. The All view stacks the four tool
+// sections in SECTION_ORDER; the conversion category is not flattened into a
+// section because the page renders it as the Any To Any conversion block
+// from the hub data, where every pair shows exactly once. A tag filter
+// yields exactly that group's section; an empty tag yields none. Sections
+// with no tools do not render.
 export function toolSections(tools, tag) {
   const ids = new Map(tools.map((tool) => [tool.id, tool]));
   const ordered = [...DISPLAY_ORDER, ...EXTRAS]

@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import Panel from "../ui/Panel";
-import { liveTools } from "../../lib/toolConfig";
+import { liveTools, CATEGORY_COLORS } from "../../lib/toolConfig";
 
 export default function RelatedTools({ tool }) {
   const siblings = liveTools().filter(
@@ -24,7 +24,10 @@ export default function RelatedTools({ tool }) {
               title={item.help}
               className="flex items-center gap-2 rounded-[5px] border border-borderDark bg-deep px-3 py-2.5 font-body text-[13px] font-bold text-offWhite transition hover:border-borderStrong hover:bg-elevated hover:text-content"
             >
-              <Icon className="h-4 w-4 shrink-0 text-muted" />
+              <Icon
+                className="h-4 w-4 shrink-0"
+                style={{ color: CATEGORY_COLORS[item.group] }}
+              />
               {item.label}
             </Link>
           );

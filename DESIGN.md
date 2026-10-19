@@ -767,9 +767,19 @@ theme tokens, so they are byte-identical in both themes:
   HTML `#E44D26`, ePub `#0D9488`.
 
 Single source: `FORMAT_COLORS` in `client/src/lib/conversionsHub.js`, rendered by
-the `FormatBadge` component in `client/src/pages/ConversionsPage.jsx`. White badge
-text is theme-independent on purpose and is not the banned raw `text-white` for
-surrounding component text.
+`FormatBadge` inside `client/src/components/conversions/ConversionTile.jsx`. White
+badge text is theme-independent on purpose and is not the banned raw `text-white`
+for surrounding component text.
+
+Same owner-sanctioned exception, extended to tool tiles on 2026-10-19: tool
+category icons on the landing tiles and in related tool chips are colored by
+category - Organize `#2B579A`, Optimize `#217346`, Convert `#D13438`, Edit
+`#8E44AD`, Security `#B45309`, PDF Intelligence `#0D9488` - replacing the
+monochrome gray lucide icons the owner rejected as not recognizable. The icon
+sits at full hex on an 18 percent tint of itself (the `2E` alpha suffix), one
+fixed value pair per category, byte-identical in both themes. Single source:
+`CATEGORY_COLORS` in `client/src/lib/toolConfig.js`, rendered by `IconChip` in
+`client/src/components/landing/ToolTile.jsx`.
 
 ---
 

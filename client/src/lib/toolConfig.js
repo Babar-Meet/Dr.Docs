@@ -70,6 +70,21 @@ export const GROUP_ORDER = [
   "intelligence",
 ];
 
+// Fixed category icon colors for tool tiles and related tool chips, the same
+// language the format badges use: one hue per family so a tile reads like a
+// category before its label lands. These are fixed hexes, not theme tokens:
+// they are byte-identical in both themes, the owner-sanctioned exception
+// DESIGN.md documents. Icon chips tint this hex at 18 percent (the 2E suffix)
+// for the chip background and use the full color for the icon itself.
+export const CATEGORY_COLORS = {
+  organize: "#2B579A",
+  optimize: "#217346",
+  convert: "#D13438",
+  edit: "#8E44AD",
+  security: "#B45309",
+  intelligence: "#0D9488",
+};
+
 export const TOOLS = [
   {
     id: "merge-pdf",
