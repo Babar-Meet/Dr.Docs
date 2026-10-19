@@ -1,12 +1,19 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { PDFDocument, StandardFonts } from "pdf-lib";
-import { stampSize } from "../../../utils/processors/watermarkProcessor.js";
-import { stampSize as clientStampSize } from "../../../client/src/lib/watermarkStamp.js";
+import {
+  stampSize,
+  mosaicGrid,
+} from "../../../utils/processors/watermarkProcessor.js";
+import {
+  stampSize as clientStampSize,
+  mosaicGrid as clientMosaicGrid,
+} from "../../../client/src/lib/watermarkStamp.js";
 
 // The client watermark preview sizes its stamp with a copy of the server
-// stampSize() rule. This pin keeps the two formulas from drifting: given the
-// same unit width, page size and angle, both must produce the same pt size.
+// stampSize() rule and lays the tiled type out with a copy of mosaicGrid().
+// These pins keep the two files from drifting: given the same inputs, both
+// must produce the same numbers.
 describe("watermark stamp mirror", () => {
   const pages = [
     { pageWidth: 595.28, pageHeight: 841.89 }, // A4 portrait
@@ -17,12 +24,37 @@ describe("watermark stamp mirror", () => {
   const unitWidths = [0.001, 0.5, 1, 5.95, 12.3];
 
   for (const page of pages) {
+    it(`mosaic grid agrees: ${page.pageWidth}x${page.pageHeight}`, () => {
+      const serverGrid = mosaicGrid(page);
+      assert.deepEqual(clientMosaicGrid(page), serverGrid);
+      assert.ok(serverGrid.cols >= 1 && serverGrid.rows >= 1);
+      assert.ok(serverGrid.cellWidth > 0 && serverGrid.cellHeight > 0);
+    });
+
     for (const unitWidth of unitWidths) {
       for (const angle of [0, 45]) {
         it(`server and client sizes agree: ${unitWidth} units at angle ${angle} on ${page.pageWidth}x${page.pageHeight}`, () => {
           const serverSize = stampSize({ ...page, unitWidth, angle });
           const clientSize = clientStampSize({ ...page, unitWidth, angle });
           assert.equal(clientSize, serverSize);
+
+          // The tiled type sizes each stamp against its cell box with the
+          // same rule, so the mirror holds for cells too.
+          const grid = mosaicGrid(page);
+          assert.equal(
+            clientStampSize({
+              pageWidth: grid.cellWidth,
+              pageHeight: grid.cellHeight,
+              unitWidth,
+              angle,
+            }),
+            stampSize({
+              pageWidth: grid.cellWidth,
+              pageHeight: grid.cellHeight,
+              unitWidth,
+              angle,
+            }),
+          );
         });
       }
     }

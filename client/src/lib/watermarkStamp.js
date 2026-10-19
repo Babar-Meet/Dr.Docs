@@ -39,3 +39,15 @@ export function stampSize({ pageWidth, pageHeight, unitWidth, angle }) {
   const byWidth = (pageWidth * 0.72) / Math.max(unitWidth, 0.001);
   return clampSize(Math.min(byWidth, pageHeight * 0.4));
 }
+
+// Mirror of the server mosaicGrid(): the tiled layout for the mosaic type -
+// three cells across the page, rows filled beneath. Must change together
+// with the server copy; the mirror test pins both functions.
+export const MOSAIC_COLS = 3;
+
+export function mosaicGrid({ pageWidth, pageHeight }) {
+  const cols = MOSAIC_COLS;
+  const cellWidth = pageWidth / cols;
+  const rows = Math.max(1, Math.round(pageHeight / cellWidth));
+  return { cols, rows, cellWidth, cellHeight: pageHeight / rows };
+}

@@ -28,6 +28,7 @@ router.post("/process", processUploadMiddleware, async (req, res, next) => {
     const watermarkText = req.body.watermarkText || "";
     const watermarkAngle = req.body.watermarkAngle || "45";
     const watermarkOpacity = req.body.watermarkOpacity || "0.35";
+    const watermarkType = req.body.watermarkType || "standard";
     const pageNumberPosition = req.body.pageNumberPosition || "bottom-center";
     const pageNumberMargin = req.body.pageNumberMargin || "24";
 
@@ -50,6 +51,7 @@ router.post("/process", processUploadMiddleware, async (req, res, next) => {
         watermarkText,
         watermarkAngle,
         watermarkOpacity,
+        watermarkType,
         pageNumberPosition,
         pageNumberMargin,
         inputFiles,

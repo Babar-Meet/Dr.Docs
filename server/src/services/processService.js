@@ -66,6 +66,7 @@ export async function processUploadedFile(uploadedFile, options = {}) {
       watermarkText: options.watermarkText,
       watermarkAngle: options.watermarkAngle,
       watermarkOpacity: options.watermarkOpacity,
+      watermarkType: options.watermarkType,
       pageNumberPosition: options.pageNumberPosition,
       pageNumberMargin: options.pageNumberMargin,
       inputFiles: normalizedInputFiles.map((file) => ({

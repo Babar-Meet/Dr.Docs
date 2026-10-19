@@ -25,27 +25,111 @@ describe("watermarkProcessor", () => {
     await fs.remove(TMP_ROOT);
   });
 
-  async function countTextInput(bytes) {
+  async function countTextInput(bytes, needle = "Confidential") {
     const doc = await getDocument({ data: new Uint8Array(bytes) }).promise;
     let matches = 0;
+    const escaped = needle.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const pattern = new RegExp(escaped, "g");
     for (let pageNumber = 1; pageNumber <= doc.numPages; pageNumber += 1) {
       const page = await doc.getPage(pageNumber);
       const content = await page.getTextContent();
       const text = content.items.map((item) => item.str).join(" ");
-      matches += (text.match(/Confidential/g) || []).length;
+      matches += (text.match(pattern) || []).length;
     }
     await doc.destroy();
     return matches;
   }
 
-  async function makeValidPdf(dir, name = "valid.pdf", pages = 1) {
+  async function makeValidPdf(dir, name = "valid.pdf", pages = 1, box = [200, 200]) {
     const doc = await PDFDocument.create();
-    for (let i = 0; i < pages; i++) doc.addPage([200, 200]);
+    for (let i = 0; i < pages; i++) doc.addPage(box);
     const bytes = await doc.save();
     const p = path.join(dir, name);
     await fs.writeFile(p, bytes);
     return p;
   }
+
+  it("stamps exactly one stamp per page when the type is absent", async () => {
+    // The additive default: nothing changed for requests without a type.
+    const work = path.join(TMP_ROOT, "default-type");
+    await fs.ensureDir(work);
+    const input = await makeValidPdf(work, "in.pdf", 1, [200, 200]);
+    const out = path.join(work, "out.pdf");
+    await assert.doesNotReject(() =>
+      watermarkPdf({
+        inputPath: input,
+        outputPath: out,
+        text: "Stamp",
+        angle: "0",
+        opacity: "1",
+      }),
+    );
+    const bytes = await fs.readFile(out);
+    assert.equal(await countTextInput(bytes, "Stamp"), 1);
+  });
+
+  it("tiled type stamps a three across grid: 12 tiles on A4 portrait", async () => {
+    const work = path.join(TMP_ROOT, "mosaic-portrait");
+    await fs.ensureDir(work);
+    const input = await makeValidPdf(work, "in.pdf", 1, [595.28, 841.89]);
+    const out = path.join(work, "out.pdf");
+    await assert.doesNotReject(() =>
+      watermarkPdf({
+        inputPath: input,
+        outputPath: out,
+        text: "Confidential",
+        angle: "45",
+        opacity: "1",
+        type: "mosaic",
+      }),
+    );
+    const bytes = await fs.readFile(out);
+    assert.equal(await countTextInput(bytes), 12);
+  });
+
+  it("tiled type keeps filling landscape pages: 6 tiles on A4 landscape", async () => {
+    const work = path.join(TMP_ROOT, "mosaic-landscape");
+    await fs.ensureDir(work);
+    const input = await makeValidPdf(work, "in.pdf", 1, [841.89, 595.28]);
+    const out = path.join(work, "out.pdf");
+    await watermarkPdf({
+      inputPath: input,
+      outputPath: out,
+      text: "Confidential",
+      angle: "0",
+      opacity: "1",
+      type: "mosaic",
+    });
+    const bytes = await fs.readFile(out);
+    assert.equal(await countTextInput(bytes), 6);
+  });
+
+  it("rejects an unknown watermark type", async () => {
+    const work = path.join(TMP_ROOT, "bad-type");
+    await fs.ensureDir(work);
+    const input = await makeValidPdf(work, "in.pdf");
+    const out = path.join(work, "out.pdf");
+    await assert.rejects(
+      () =>
+        watermarkPdf({
+          inputPath: input,
+          outputPath: out,
+          text: "Stamp",
+          angle: "45",
+          opacity: "0.35",
+          type: "fancy",
+        }),
+      (err) => {
+        assert.equal(err.code, "UNSUPPORTED_FILE");
+        assert.equal(err.statusCode, 400);
+        assert.equal(
+          err.details?.reason,
+          "Invalid watermark type: fancy. Supported types are standard and mosaic.",
+        );
+        return true;
+      },
+    );
+  });
 
   it("stamps every page and keeps the page count", async () => {
     const work = path.join(TMP_ROOT, "three-pages");

@@ -49,6 +49,7 @@ export default function useToolProcess(tool) {
   const [watermarkText, setWatermarkText] = useState("");
   const [watermarkAngle, setWatermarkAngle] = useState("45");
   const [watermarkOpacity, setWatermarkOpacity] = useState("35");
+  const [watermarkType, setWatermarkType] = useState("standard");
   const [pageNumberPosition, setPageNumberPosition] = useState("bottom-center");
   const [pageNumberMargin, setPageNumberMargin] = useState("24");
   const [isProcessing, setIsProcessing] = useState(false);
@@ -433,6 +434,7 @@ export default function useToolProcess(tool) {
         watermarkText: watermarkText.trim(),
         watermarkAngle,
         watermarkOpacity: String(Number(watermarkOpacity) / 100),
+        watermarkType,
         pageNumberPosition,
         pageNumberMargin,
       });
@@ -512,6 +514,8 @@ export default function useToolProcess(tool) {
     setWatermarkAngle,
     watermarkOpacity,
     setWatermarkOpacity,
+    watermarkType,
+    setWatermarkType,
     pageNumberPosition,
     setPageNumberPosition,
     pageNumberMargin,

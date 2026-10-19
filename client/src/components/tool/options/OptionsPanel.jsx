@@ -94,6 +94,8 @@ export default function OptionsPanel({
         setWatermarkAngle={state.setWatermarkAngle}
         watermarkOpacity={state.watermarkOpacity}
         setWatermarkOpacity={state.setWatermarkOpacity}
+        watermarkType={state.watermarkType}
+        setWatermarkType={state.setWatermarkType}
         file={state.selectedFiles[0]}
       />
     );

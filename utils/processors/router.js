@@ -324,6 +324,7 @@ export async function processFile({
   watermarkText,
   watermarkAngle,
   watermarkOpacity,
+  watermarkType,
   pageNumberPosition,
   pageNumberMargin,
   inputFiles = [],
@@ -550,6 +551,7 @@ export async function processFile({
         text: watermarkText,
         angle: watermarkAngle,
         opacity: watermarkOpacity,
+        type: watermarkType,
       });
       await ensureOutputExists(outputPath);
       const base = sanitizeBaseName(path.parse(file.originalName).name);
