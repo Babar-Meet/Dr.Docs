@@ -1,6 +1,7 @@
-// Landing display data. The landing page is one flat grid of tool tiles in a
-// fixed order with a tag bar that filters it. This module holds the display
-// order and the per tile sentence so the shared tool data in
+// Landing display data. The landing page groups the tool tiles into labeled
+// sections, one per category, in a fixed order, with a tag bar that filters
+// to one section. This module holds the section order, the display order and
+// the per tile sentence so the shared tool data in
 // client/src/lib/toolConfig.js keeps its own shape and text.
 
 export const TAG_ORDER = [
@@ -25,8 +26,8 @@ export const TAG_LABELS = {
   intelligence: "PDF Intelligence",
 };
 
-// Every tile in one flat interwoven sequence, the order the grid shows. Tag
-// filters slice this same sequence, no grouped sections.
+// Every tile in one flat curated sequence, the order the grid shows inside
+// each section. Tag filters slice this same sequence by group.
 export const DISPLAY_ORDER = [
   "merge-pdf",
   "split-pdf",
@@ -42,6 +43,7 @@ export const DISPLAY_ORDER = [
   "jpg-to-pdf",
   "html-to-pdf",
   "sign-pdf",
+  "pdf-forms",
   "watermark-pdf",
   "rotate-pdf",
   "unlock-pdf",
@@ -64,6 +66,29 @@ export const EXTRAS = ["pdf-to-markdown", "summarize-pdf", "translate-pdf"];
 // Tags that have no tool behind them on this site.
 export const EMPTY_TAGS = ["workflows"];
 
+// Section titles for the grouped landing grid, worded so the tag bar chips
+// and the section headings read the same.
+export const SECTION_TITLES = {
+  organize: "Organize PDF",
+  optimize: "Optimize PDF",
+  convert: "Convert PDF",
+  edit: "Edit PDF",
+  security: "PDF Security",
+  intelligence: "PDF Intelligence",
+};
+
+// Landing section order. The All view lists the five standard groups in this
+// order; the intelligence queue keeps its own tag and stays out of All,
+// exactly like the flat grid did before.
+const SECTION_ORDER = [
+  "organize",
+  "optimize",
+  "convert",
+  "edit",
+  "security",
+  "intelligence",
+];
+
 // One short sentence per tile, in our words, true of the code that exists.
 // Queued tiles say so in the sentence itself.
 export const TOOL_SENTENCES = {
@@ -81,6 +106,7 @@ export const TOOL_SENTENCES = {
   "jpg-to-pdf": "Turn JPG and PNG images into a PDF, one image per page.",
   "html-to-pdf": "Not built yet: turn a web page or an HTML file into a PDF.",
   "sign-pdf": "Not built yet: place a drawn or uploaded signature on a PDF.",
+  "pdf-forms": "Not built yet: fill in existing form fields or add new ones.",
   "watermark-pdf": "Stamp text over every page of a PDF.",
   "rotate-pdf": "Rotate all pages or turn pages live, one at a time.",
   "unlock-pdf": "Remove restrictions, or open a locked PDF with its password.",
@@ -99,19 +125,29 @@ export const TOOL_SENTENCES = {
   "translate-pdf": "Not built yet: translate a document into another language.",
 };
 
-export function toolsForTag(tools, tag) {
+// One labeled section per category. The All view stacks every standard group
+// in SECTION_ORDER; a tag filter yields exactly that group's section; an
+// empty tag yields no section at all. Sections with no tools do not render.
+export function toolSections(tools, tag) {
   const ids = new Map(tools.map((tool) => [tool.id, tool]));
   const ordered = [...DISPLAY_ORDER, ...EXTRAS]
     .map((id) => ids.get(id))
     .filter(Boolean);
 
-  if (!tag || tag === "all") {
-    return ordered.filter((tool) => tool.group !== "intelligence");
-  }
-  if (EMPTY_TAGS.includes(tag)) {
-    return [];
-  }
-  return ordered.filter((tool) => tool.group === tag);
+  const groups =
+    !tag || tag === "all"
+      ? SECTION_ORDER.filter((group) => group !== "intelligence")
+      : EMPTY_TAGS.includes(tag)
+        ? []
+        : [tag];
+
+  return groups
+    .map((group) => ({
+      group,
+      title: SECTION_TITLES[group] || group,
+      tools: ordered.filter((tool) => tool.group === group),
+    }))
+    .filter((section) => section.tools.length > 0);
 }
 
 export function sentenceFor(tool) {
