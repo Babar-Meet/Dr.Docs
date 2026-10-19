@@ -197,14 +197,16 @@ export default function Header() {
                 }}
                 onFocus={() => setMenuOpen(true)}
                 onKeyDown={onSearchKeyDown}
-                placeholder="PDF tools"
+                placeholder="Search"
                 className="w-24 bg-transparent font-body text-[13px] font-medium text-content outline-none placeholder:font-body placeholder:text-muted sm:w-44"
               />
-              {/* The slash hint: gone once the menu is open, so it never
-                  competes with the query the user is typing. */}
+              {/* The slash hint: the GitHub/Notion pattern - a small key
+                  chip in the field, with the plain-words tooltip, gone once
+                  the menu is open so it never competes with the query. */}
               {!menuOpen && (
                 <span
                   aria-hidden="true"
+                  title="Press / to search"
                   className="shrink-0 rounded-[4px] border border-borderDark bg-panel px-1.5 py-0.5 font-mono text-[10px] font-medium leading-[14px] text-muted"
                 >
                   /
