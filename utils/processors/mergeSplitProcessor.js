@@ -12,7 +12,9 @@ function isPasswordError(reason) {
   return /(password|encrypted|decrypt)/i.test(reason || "");
 }
 
-function normalizePageRanges(pageRanges, pageCount) {
+// Exported for the split-parts tests: the client's parts editor parses the
+// same pageRanges string and this is the rule it must agree with.
+export function normalizePageRanges(pageRanges, pageCount) {
   if (!pageRanges || !pageRanges.trim()) {
     return Array.from({ length: pageCount }, (_, index) => [
       index + 1,

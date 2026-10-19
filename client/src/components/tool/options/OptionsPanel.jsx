@@ -47,6 +47,7 @@ export default function OptionsPanel({
         pageRanges={state.pageRanges}
         setPageRanges={state.setPageRanges}
         pdfPages={singlePdfPages}
+        file={files[0] || null}
       />
     );
   }
