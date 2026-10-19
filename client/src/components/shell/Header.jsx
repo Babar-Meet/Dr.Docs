@@ -73,6 +73,29 @@ export default function Header() {
     };
   }, [menuOpen]);
 
+  // Pressing "/" anywhere jumps straight into the search box, the way
+  // Google and YouTube do. Inside a field it just types the slash, and
+  // shortcuts with modifiers (like Ctrl+/) are left alone.
+  useEffect(() => {
+    const onKeyDown = (event) => {
+      if (event.key !== "/" || event.ctrlKey || event.metaKey || event.altKey) {
+        return;
+      }
+      const target = event.target;
+      if (
+        target instanceof HTMLElement &&
+        (target.isContentEditable ||
+          ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName))
+      ) {
+        return;
+      }
+      event.preventDefault();
+      inputRef.current?.focus();
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, []);
+
   const grouped = GROUP_ORDER.map((group) => {
     const items = TOOLS.filter((tool) => tool.group === group);
     if (group === "convert") {
@@ -177,6 +200,16 @@ export default function Header() {
                 placeholder="PDF tools"
                 className="w-24 bg-transparent font-body text-[13px] font-medium text-content outline-none placeholder:font-body placeholder:text-muted sm:w-44"
               />
+              {/* The slash hint: gone once the menu is open, so it never
+                  competes with the query the user is typing. */}
+              {!menuOpen && (
+                <span
+                  aria-hidden="true"
+                  className="shrink-0 rounded-[4px] border border-borderDark bg-panel px-1.5 py-0.5 font-mono text-[10px] font-medium leading-[14px] text-muted"
+                >
+                  /
+                </span>
+              )}
               <button
                 type="button"
                 tabIndex={-1}
