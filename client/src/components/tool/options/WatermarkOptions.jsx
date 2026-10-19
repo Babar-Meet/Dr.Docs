@@ -290,33 +290,31 @@ export default function WatermarkOptions({
         <div className="mt-4 border-b border-borderDark">
           <div className="flex gap-4">
             <AngleTab
-              active={watermarkType === "standard"}
-              onClick={() => setWatermarkType("standard")}
-            >
-              Single
-            </AngleTab>
-            <AngleTab
-              active={watermarkType === "mosaic"}
-              onClick={() => setWatermarkType("mosaic")}
-            >
-              Tiled
-            </AngleTab>
-          </div>
-        </div>
-
-        <div className="mt-4 border-b border-borderDark">
-          <div className="flex gap-4">
-            <AngleTab
-              active={watermarkAngle === "45"}
-              onClick={() => setWatermarkAngle("45")}
+              active={watermarkType === "standard" && watermarkAngle === "45"}
+              onClick={() => {
+                setWatermarkType("standard");
+                setWatermarkAngle("45");
+              }}
             >
               Diagonal
             </AngleTab>
             <AngleTab
-              active={watermarkAngle === "0"}
-              onClick={() => setWatermarkAngle("0")}
+              active={watermarkType === "standard" && watermarkAngle === "0"}
+              onClick={() => {
+                setWatermarkType("standard");
+                setWatermarkAngle("0");
+              }}
             >
               Flat
+            </AngleTab>
+            <AngleTab
+              active={watermarkType === "mosaic"}
+              onClick={() => {
+                setWatermarkType("mosaic");
+                setWatermarkAngle("45");
+              }}
+            >
+              Repeat
             </AngleTab>
           </div>
         </div>
@@ -342,8 +340,10 @@ export default function WatermarkOptions({
 
         <p className="mt-3 font-body text-xs text-muted">
           {watermarkType === "mosaic"
-            ? "The stamp repeats in a grid across every page, tilted at 45 degrees or flat at 0."
-            : "The stamp goes centered on every page at 45 degrees, or flat at 0."}{" "}
+            ? "The stamp repeats in a grid across every page, tilted at 45 degrees."
+            : watermarkAngle === "0"
+              ? "The stamp sits centered on every page, flat at 0 degrees."
+              : "The stamp sits centered on every page, diagonal at 45 degrees."}{" "}
           Gray text with the chosen opacity sits on top of your content.
         </p>
       </Panel>

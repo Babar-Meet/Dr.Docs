@@ -495,7 +495,7 @@ export const TOOLS = [
     operation: "watermark",
     help: "Stamp text on every page of a PDF",
     detail:
-      "Watermark stamps text on every page, once centered or tiled across the whole page, diagonal or flat, with adjustable opacity. Encrypted inputs are never bypassed and keep failing with Password required.",
+      "Watermark stamps text on every page, diagonal, flat, or repeated across the whole page, with adjustable opacity. Encrypted inputs are never bypassed and keep failing with Password required.",
     kind: "info",
     sourceExtensions: [".pdf"],
     targetFormat: null,
