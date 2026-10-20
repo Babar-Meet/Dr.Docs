@@ -56,20 +56,10 @@ export async function processUploadedFile(uploadedFile, options = {}) {
 
   try {
     const processed = await processFile({
-      operation: options.operation,
-      targetFormat: options.targetFormat,
-      pageRanges: options.pageRanges,
-      splitEvery: options.splitEvery,
-      rotationAngle: options.rotationAngle,
-      pages: options.pages,
-      password: options.password,
-      rotations: options.rotations,
-      watermarkText: options.watermarkText,
-      watermarkAngle: options.watermarkAngle,
-      watermarkOpacity: options.watermarkOpacity,
-      watermarkType: options.watermarkType,
-      pageNumberPosition: options.pageNumberPosition,
-      pageNumberMargin: options.pageNumberMargin,
+      // The option bag passes through as one object; the transport layer
+      // (routes/files.js) owns the field names and defaults, and
+      // processFile/registry own the per-operation reads.
+      ...options,
       inputFiles: normalizedInputFiles.map((file) => ({
         path: file.path,
         originalName: file.originalname,
