@@ -107,6 +107,8 @@ const PAIR_STATUS = {
     rtf: RUN_REAL_OUTPUT,
     txt: RUN_TXT_TEXT,
     html: DECLARED_ACCEPTED,
+    jpg: RUN_REAL_OUTPUT,
+    png: RUN_REAL_OUTPUT,
   },
   ".docx": {
     pdf: RUN_REAL_OUTPUT,
@@ -837,6 +839,52 @@ describe("nothing that already works stopped working", () => {
     assert.equal(bytes.subarray(8, 12).toString("latin1"), "WEBP", "a webp output must carry the WEBP marker");
   });
 
+  it("convert pdf to jpg rasters one jpg per page through the declared pair", async () => {
+    // Declared-working pair (pdf.js raster route): a 2 page pdf becomes two
+    // jpg outputs that carry the JPEG marker. This pair is the pdf -> jpg
+    // row of the expectation table.
+    const work = await newWork("pdf-jpg");
+    const source = await makePlainPdf(work, "raster.pdf", 2);
+    const result = await runProcess(
+      {
+        operation: "convert",
+        targetFormat: "jpg",
+        inputFiles: [mkInput(source, "raster.pdf", MIME_BY_EXTENSION[".pdf"][0] || "application/pdf")],
+      },
+      work
+    );
+    assert.ok(result && typeof result === "object", "result must be an object");
+    assert.ok(Array.isArray(result.outputs) && result.outputs.length === 2, "convert pdf to jpg must return one output per page");
+    for (const [index, out] of result.outputs.entries()) {
+      assert.equal(normExt(out.outputExtension), "jpg", "the target extension must be jpg");
+      assert.ok(await fs.pathExists(out.outputPath), "the jpg output file must exist");
+      assert.equal(out.detectedType, "JPG", "the raster output must be detected as JPG");
+      assert.equal(out.outputName, `raster_page_${index + 1}.jpg`);
+      const bytes = await fs.readFile(out.outputPath);
+      assert.equal(bytes.subarray(0, 2).toString("hex"), "ffd8", "a jpg output must carry the JPEG marker");
+    }
+  });
+
+  it("convert pdf to png rasters one png per page through the declared pair", async () => {
+    const work = await newWork("pdf-png");
+    const source = await makePlainPdf(work, "run.pdf", 1);
+    const result = await runProcess(
+      {
+        operation: "convert",
+        targetFormat: "png",
+        inputFiles: [mkInput(source, "run.pdf", MIME_BY_EXTENSION[".pdf"][0] || "application/pdf")],
+      },
+      work
+    );
+    assert.ok(result && typeof result === "object", "result must be an object");
+    assert.ok(Array.isArray(result.outputs) && result.outputs.length === 1, "convert pdf to png must return one output for one page");
+    const out = result.outputs[0];
+    assert.equal(normExt(out.outputExtension), "png", "the target extension must be png");
+    assert.ok(await fs.pathExists(out.outputPath), "the png output file must exist");
+    const bytes = await fs.readFile(out.outputPath);
+    assert.equal(bytes.subarray(0, 4).toString("hex"), "89504e47", "a png output must carry the PNG marker");
+  });
+
   it("convert still refuses every undeclared target with UNSUPPORTED_FILE 400", async () => {
     // Sanitized slice of the frozen complement matrix: targets that other sources declare
     // but this source does not, plus a target declared nowhere. Any of them must be
@@ -930,7 +978,7 @@ describe("declared pair expectation table", () => {
     );
     assert.deepEqual(
       outputPairs.sort(),
-      [".docx->pdf", ".jpg->webp", ".pdf->docx", ".pdf->odt", ".pdf->pptx", ".pdf->rtf"],
+      [".docx->pdf", ".jpg->webp", ".pdf->docx", ".pdf->jpg", ".pdf->odt", ".pdf->png", ".pdf->pptx", ".pdf->rtf"],
       "the run-proven non-txt pairs of this suite must stay named, one real-output test per row"
     );
   });

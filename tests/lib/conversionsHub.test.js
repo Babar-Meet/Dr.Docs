@@ -128,24 +128,36 @@ describe("conversions hub data", () => {
     it("queued PDF tiles stay queued", () => {
       const pdfSection = sections.find((section) => section.key === "pdf");
       const soon = pdfSection.tiles.filter((tile) => !tile.implemented);
-      assert.deepEqual(
-        soon.map((tile) => tile.targetKey).sort(),
-        ["jpg", "pdfa", "png"].sort(),
-      );
+      assert.deepEqual(soon.map((tile) => tile.targetKey), ["pdfa"]);
       for (const tile of soon) {
         const mirrorTargets = CONVERSION_TARGETS[".pdf"];
         assert.ok(!mirrorTargets.includes(tile.targetKey));
       }
     });
 
+    it("pdf to jpg and pdf to png are live pages", () => {
+      const pdfSection = sections.find((section) => section.key === "pdf");
+      const live = pdfSection.tiles.filter((tile) => tile.implemented);
+      const jpg = live.find((tile) => tile.targetKey === "jpg");
+      const png = live.find((tile) => tile.targetKey === "png");
+      assert.ok(jpg && png, "both raster targets must be live");
+      for (const tile of [jpg, png]) {
+        assert.equal(tile.href, `/convert/pdf-to-${tile.targetKey}`);
+        const tool = findPairTool(tile.href.slice("/convert/".length));
+        assert.ok(tool, `${tile.targetKey} pair page must resolve`);
+        assert.deepEqual(tool.sourceExtensions, [".pdf"]);
+        assert.equal(tool.targetFormat, tile.targetKey);
+      }
+    });
+
     it("live tile counts add up to the pinned totals", () => {
       const liveTotal = sections.reduce((sum, section) => sum + section.liveCount, 0);
-      assert.equal(liveTotal, 37);
+      assert.equal(liveTotal, 39);
       const soonTotal = sections.reduce(
         (sum, section) => sum + section.tiles.filter((tile) => !tile.implemented).length,
         0,
       );
-      assert.equal(soonTotal, 3);
+      assert.equal(soonTotal, 1);
     });
   });
 

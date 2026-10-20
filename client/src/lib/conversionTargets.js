@@ -1,6 +1,6 @@
 // Client mirror of CONVERSION_TARGETS in utils/constants.js. Keep both in sync.
 export const CONVERSION_TARGETS = {
-  ".pdf": ["docx", "pptx", "xlsx", "odt", "rtf", "txt", "html"],
+  ".pdf": ["docx", "pptx", "xlsx", "odt", "rtf", "txt", "html", "jpg", "png"],
   ".docx": ["pdf", "odt", "rtf", "txt", "html", "doc", "epub", "pptx"],
   ".pptx": ["pdf", "docx", "odp", "ppt", "html", "txt"],
   ".xlsx": ["pdf", "ods", "xls", "csv", "html", "txt"],

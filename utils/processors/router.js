@@ -20,6 +20,7 @@ import {
   repairImage,
 } from "./imageProcessor.js";
 import { normalizeZip, repairZip } from "./zipProcessor.js";
+import { convertPdfToImages } from "./rasterProcessor.js";
 import {
   convertWithInlineTextExtractors,
   convertWithLibreOffice,
@@ -614,6 +615,11 @@ export async function processFile({
   }
 
   const outputs = [];
+  // The raster pair is the only convert route that turns one file into
+  // several outputs, so it shapes the summary sentence like split does;
+  // every other route keeps the generic count below.
+  let rasterMessage = null;
+  let rasterPages = 0;
 
   for (let index = 0; index < files.length; index += 1) {
     const file = files[index];
@@ -681,6 +687,47 @@ export async function processFile({
         throw unsupportedFile("A target format is required for convert mode.");
       }
 
+      // PDF -> JPG and PDF -> PNG export one image per page, so this pair
+      // can produce several outputs from a single input file. Every other
+      // pair still produces exactly one output below.
+      if (
+        fileType.extension === ".pdf" &&
+        (normalizedTarget === "jpg" || normalizedTarget === "png")
+      ) {
+        if (!isValidConversion(fileType.extension, normalizedTarget)) {
+          throw unsupportedFile(
+            "Unsupported conversion pair for this file type",
+          );
+        }
+
+        const outputDir = path.dirname(outputBasePath);
+        const imageOutputs = await convertPdfToImages({
+          inputPath: file.path,
+          outputDir,
+          outputPrefix: sanitizeBaseName(
+            path.parse(file.originalName).name,
+          ),
+          targetFormat: normalizedTarget,
+        });
+
+        for (const [index, part] of imageOutputs.entries()) {
+          await ensureOutputExists(part.outputPath);
+          outputs.push(
+            createDescriptor({
+              outputPath: part.outputPath,
+              outputExtension: `.${normalizedTarget}`,
+              sourceName: path.parse(part.outputName).name,
+              outputName: part.outputName,
+              detectedType: normalizedTarget.toUpperCase(),
+              message: `Page ${index + 1} exported as ${normalizedTarget.toUpperCase()}.`,
+            }),
+          );
+        }
+        rasterPages += imageOutputs.length;
+        rasterMessage = `Exported ${rasterPages} page(s) as ${normalizedTarget.toUpperCase()} images.`;
+        continue;
+      }
+
       const outputExtension = `.${normalizedTarget}`;
       const outputPath = createOutputPath(perFileBase, outputExtension);
       const message = await convertByType({
@@ -730,7 +777,7 @@ export async function processFile({
   }
 
   return {
-    message: `Processed ${outputs.length} file(s) successfully.`,
+    message: rasterMessage || `Processed ${outputs.length} file(s) successfully.`,
     outputs,
   };
 }

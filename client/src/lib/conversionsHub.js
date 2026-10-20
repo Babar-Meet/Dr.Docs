@@ -83,16 +83,6 @@ export const SECTION_SOURCES = [
 const COMING_SOON_NOTES = {
   pdf: [
     {
-      targetKey: "jpg",
-      extension: ".jpg",
-      note: "Convert .pdf files to .jpg. Not built yet: each PDF page would export as one JPG image.",
-    },
-    {
-      targetKey: "png",
-      extension: ".png",
-      note: "Convert .pdf files to .png. Not built yet: each PDF page would export as one PNG image.",
-    },
-    {
       targetKey: "pdfa",
       extension: ".pdf",
       note: "Convert .pdf files to .pdf (PDF/A). Not built yet: the ISO PDF/A archive rewrite.",
