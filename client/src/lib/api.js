@@ -1,68 +1,20 @@
+import { appendOptionFields } from "./toolRules";
+
 export const API_BASE = (import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
 
 export function buildEndpoint(pathname) {
   return API_BASE ? `${API_BASE}${pathname}` : pathname;
 }
 
-export async function submitProcess({
-  operation,
-  files,
-  targetFormat = "",
-  pageRanges = "",
-  splitEvery = "",
-  rotationAngle = "90",
-  pages = "all",
-  password = "",
-  rotations = "",
-  watermarkText = "",
-  watermarkAngle = "45",
-  watermarkOpacity = "0.35",
-  watermarkType = "standard",
-  pageNumberPosition = "bottom-center",
-  pageNumberMargin = "24",
-}) {
+// Transport layer only: it serialises the prepared values that
+// lib/toolRules.js shapes into the wire fields (additionally declared there),
+// appends the selected files and normalises the response. Option names,
+// defaults and per-operation field selection live in lib/toolRules.js.
+export async function submitProcess({ operation, files, values }) {
   const formData = new FormData();
   formData.append("operation", operation);
 
-  if (operation === "convert" || operation === "merge") {
-    formData.append("targetFormat", targetFormat);
-  }
-
-  if (operation === "split" && pageRanges.trim()) {
-    formData.append("pageRanges", pageRanges.trim());
-  }
-
-  if (operation === "split" && `${splitEvery}`.trim()) {
-    formData.append("splitEvery", `${splitEvery}`.trim());
-  }
-
-  if (operation === "rotate") {
-    formData.append("rotationAngle", String(rotationAngle));
-    formData.append("pages", pages.trim() || "all");
-    if (rotations.trim()) {
-      formData.append("rotations", rotations.trim());
-    }
-  }
-
-  if (operation === "protect") {
-    formData.append("password", password);
-  }
-
-  if (operation === "unlock" && password) {
-    formData.append("password", password);
-  }
-
-  if (operation === "watermark") {
-    formData.append("watermarkText", watermarkText);
-    formData.append("watermarkAngle", String(watermarkAngle));
-    formData.append("watermarkOpacity", String(watermarkOpacity));
-    formData.append("watermarkType", String(watermarkType));
-  }
-
-  if (operation === "pagenumbers") {
-    formData.append("pageNumberPosition", pageNumberPosition);
-    formData.append("pageNumberMargin", String(pageNumberMargin));
-  }
+  appendOptionFields(formData, { operation, values });
 
   files.forEach((file) => {
     formData.append("files", file);

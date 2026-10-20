@@ -3,11 +3,19 @@ import { buildEndpoint, submitProcess } from "../lib/api";
 import { CONVERSION_TARGETS } from "../lib/conversionTargets";
 import { fileKey, getExtension, MAX_FILE_SIZE_BYTES } from "../lib/fileUtils";
 import { inspectFile, KNOWN_EXTENSIONS } from "../lib/fileInspect";
+import {
+  buildRequestOptionValues,
+  describeExtensions,
+  requiredOptionMet,
+  validateToolState,
+} from "../lib/toolRules";
 
 // The rotate tool has two UI modes. "all" rotates every page in one press and
 // maps to the frozen rotationAngle plus pages=all request fields. "pages" is
 // the per-page preview: the browser tracks a rotation per page and maps it to
 // the rotations field as page:angle pairs. Degrees are never shown in the UI.
+// Validation, request-value shaping and wire-field selection live in
+// lib/toolRules.js so a new option never has to edit this hook.
 
 // Ordered intersection of the selected files' conversion targets. An empty list
 // means either no files, or at least one file with no known target set.
@@ -23,10 +31,6 @@ function commonConvertTargets(files) {
   return targetSets.reduce((accumulator, currentSet) =>
     accumulator.filter((value) => currentSet.includes(value)),
   );
-}
-
-function describeExtensions(extensions) {
-  return extensions.map((extension) => extension.replace(".", "").toUpperCase()).join(", ");
 }
 
 export default function useToolProcess(tool) {
@@ -288,158 +292,46 @@ export default function useToolProcess(tool) {
       return;
     }
 
-    if (tool.operation === "merge") {
-      if (selectedFiles.length < 2) {
-        setFailure("Unsupported file", "Merge requires at least two files");
-        return;
-      }
+    const optionState = {
+      targetFormat,
+      pageRanges,
+      splitMode,
+      splitEvery,
+      rotateMode,
+      rotateAllDelta,
+      pageRotations,
+      password,
+      watermarkText,
+      watermarkAngle,
+      watermarkOpacity,
+      watermarkType,
+      pageNumberPosition,
+      pageNumberMargin,
+    };
 
-      if (!["pdf", "docx"].includes((targetFormat || "").toLowerCase())) {
-        setFailure("Unsupported file", "Merge output must be PDF or DOCX");
-        return;
-      }
-    }
-
-    if (tool.operation === "split") {
-      if (
-        selectedFiles.length !== 1 ||
-        getExtension(selectedFiles[0].name) !== ".pdf"
-      ) {
-        setFailure("Unsupported file", "Split requires exactly one PDF file");
-        return;
-      }
-    }
-
-    if (tool.operation === "convert") {
-      if (
-        tool.sourceExtensions &&
-        !selectedFiles.every((file) =>
-          tool.sourceExtensions.includes(getExtension(file.name)),
-        )
-      ) {
-        setFailure(
-          "Unsupported file",
-          `${tool.label} accepts ${describeExtensions(tool.sourceExtensions)} files only`,
-        );
-        return;
-      }
-
-      if (!targetFormat) {
-        setFailure(
-          "Unsupported file",
-          "No valid conversion target for selected files",
-        );
-        return;
-      }
-    }
-
-    if (tool.operation === "rotate") {
-      if (
-        selectedFiles.length !== 1 ||
-        getExtension(selectedFiles[0].name) !== ".pdf"
-      ) {
-        setFailure("Unsupported file", "Rotate requires exactly one PDF file.");
-        return;
-      }
-
-      if (!isRotateRunnable()) {
-        setFailure(
-          "Unsupported file",
-          "Rotate at least one page before processing.",
-        );
-        return;
-      }
-    }
-
-    if (tool.operation === "compress") {
-      const allPdf = selectedFiles.every(
-        (file) => getExtension(file.name) === ".pdf",
-      );
-      if (!allPdf) {
-        setFailure("Unsupported file", "Compress supports PDF files only.");
-        return;
-      }
-    }
-
-    if (tool.operation === "protect") {
-      const allPdf = selectedFiles.every(
-        (file) => getExtension(file.name) === ".pdf",
-      );
-      if (!allPdf) {
-        setFailure("Unsupported file", "Protect supports PDF files only.");
-        return;
-      }
-      if (!password.trim()) {
-        setFailure(
-          "Unsupported file",
-          "Enter a password to protect the PDF.",
-        );
-        return;
-      }
-    }
-
-    if (tool.operation === "watermark") {
-      const allPdf = selectedFiles.every(
-        (file) => getExtension(file.name) === ".pdf",
-      );
-      if (!allPdf) {
-        setFailure("Unsupported file", "Watermark supports PDF files only.");
-        return;
-      }
-      if (!watermarkText.trim()) {
-        setFailure(
-          "Unsupported file",
-          "Enter text to watermark the PDF.",
-        );
-        return;
-      }
-    }
-
-    if (tool.operation === "pagenumbers") {
-      const allPdf = selectedFiles.every(
-        (file) => getExtension(file.name) === ".pdf",
-      );
-      if (!allPdf) {
-        setFailure(
-          "Unsupported file",
-          "Page numbers supports PDF files only.",
-        );
-        return;
-      }
+    const failureReason = validateToolState({
+      operation: tool.operation,
+      tool,
+      files: selectedFiles,
+      state: optionState,
+      flags: { rotateRunnable: isRotateRunnable() },
+    });
+    if (failureReason) {
+      setFailure("Unsupported file", failureReason);
+      return;
     }
 
     setIsProcessing(true);
     setStatus(null);
 
-    const isRotatePages = tool.operation === "rotate" && rotateMode === "pages";
-    const rotationsPayload = isRotatePages
-      ? Object.keys(pageRotations)
-          .map(Number)
-          .sort((a, b) => a - b)
-          .map((page) => `${page}:${pageRotations[page]}`)
-          .join(",")
-      : "";
-    const rotateAnglePayload = tool.operation === "rotate"
-      ? String(rotateAllDelta || "90")
-      : "90";
-
     try {
       const { ok, payload } = await submitProcess({
         operation: tool.operation,
         files: selectedFiles,
-        targetFormat,
-        pageRanges,
-        splitEvery: splitMode === "fixed" ? splitEvery : "",
-        rotationAngle: rotateAnglePayload,
-        pages: "all",
-        password: password.trim() || "",
-        rotations: rotationsPayload,
-        watermarkText: watermarkText.trim(),
-        watermarkAngle,
-        watermarkOpacity: String(Number(watermarkOpacity) / 100),
-        watermarkType,
-        pageNumberPosition,
-        pageNumberMargin,
+        values: buildRequestOptionValues({
+          operation: tool.operation,
+          state: optionState,
+        }),
       });
 
       if (!ok) {
@@ -539,9 +431,10 @@ export default function useToolProcess(tool) {
       selectedFiles.length > 0 &&
       rejectedCount === 0 &&
       !isProcessing &&
-      (tool.operation !== "protect" || password.trim() !== "") &&
-      (tool.operation !== "watermark" || watermarkText.trim() !== "") &&
-      (tool.operation !== "rotate" || isRotateRunnable()),
+      requiredOptionMet({
+        operation: tool.operation,
+        values: { password, watermarkText, rotateRunnable: isRotateRunnable() },
+      }),
     onPickFiles,
     onDrop,
     onDragOver,

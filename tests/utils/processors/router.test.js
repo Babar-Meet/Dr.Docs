@@ -88,6 +88,27 @@ describe("router processFile dispatch", () => {
         (err) => err.code === "UNSUPPORTED_FILE"
       );
     });
+
+    it("convert reports an undetectable file before a missing target format", async () => {
+      const work = path.join(TMP_ROOT, "work-convert-order");
+      await fs.ensureDir(work);
+      const unknownPath = path.join(work, "weird.abc");
+      await fs.writeFile(unknownPath, "whatever");
+      await assert.rejects(
+        () => processFile({
+          operation: "convert",
+          inputFiles: [mkInput(unknownPath, "weird.abc", "application/x-abc")],
+          outputBasePath: path.join(work, "out"),
+          workDir: work,
+          targetFormat: "",
+        }),
+        (err) => {
+          assert.equal(err.code, "UNSUPPORTED_FILE");
+          assert.equal(err.details.reason, "Unsupported file: weird.abc");
+          return true;
+        }
+      );
+    });
   });
 
   describe("unlock dispatch", () => {
