@@ -9,6 +9,7 @@ export async function submitProcess({
   files,
   targetFormat = "",
   pageRanges = "",
+  splitEvery = "",
   rotationAngle = "90",
   pages = "all",
   password = "",
@@ -29,6 +30,10 @@ export async function submitProcess({
 
   if (operation === "split" && pageRanges.trim()) {
     formData.append("pageRanges", pageRanges.trim());
+  }
+
+  if (operation === "split" && `${splitEvery}`.trim()) {
+    formData.append("splitEvery", `${splitEvery}`.trim());
   }
 
   if (operation === "rotate") {

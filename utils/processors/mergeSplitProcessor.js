@@ -104,15 +104,44 @@ export async function mergePdfFiles({ inputFiles, outputPath }) {
   await fs.writeFile(outputPath, await mergedDocument.save());
 }
 
+// Token string for the "split every N pages" mode: consecutive chunks
+// covering every page, with a shorter final part when the page count does
+// not divide evenly. The client's badge math in pageRanges.js chunks pages
+// the same way, and tests pin the two together.
+export function fixedRangeTokens(pageCount, every) {
+  const tokens = [];
+  for (let start = 1; start <= pageCount; start += every) {
+    const end = Math.min(start + every - 1, pageCount);
+    tokens.push(start === end ? `${start}` : `${start}-${end}`);
+  }
+  return tokens.join(",");
+}
+
 export async function splitPdfByRanges({
   inputPath,
   outputDir,
   outputPrefix,
   pageRanges,
+  splitEvery = "",
 }) {
   const inputPdf = await loadPdfFromPath(inputPath);
   const pageCount = inputPdf.getPageCount();
-  const segments = normalizePageRanges(pageRanges, pageCount);
+
+  // The fixed mode wins when it is provided: the caller sent one number and
+  // expects chunks of that size, whatever the ranges string holds.
+  let effectiveRanges = pageRanges;
+  const everyText = `${splitEvery ?? ""}`.trim();
+  if (everyText !== "") {
+    const every = Number.parseInt(everyText, 10);
+    if (Number.isNaN(every) || every < 1) {
+      throw new AppError("Unsupported file", "UNSUPPORTED_FILE", 400, {
+        reason: `Invalid split every: ${splitEvery}. Use a whole number of pages, 1 or more.`,
+      });
+    }
+    effectiveRanges = fixedRangeTokens(pageCount, every);
+  }
+
+  const segments = normalizePageRanges(effectiveRanges, pageCount);
 
   await fs.ensureDir(outputDir);
 

@@ -317,6 +317,7 @@ export async function processFile({
   operation,
   targetFormat,
   pageRanges,
+  splitEvery,
   rotationAngle,
   pages,
   password,
@@ -390,6 +391,7 @@ export async function processFile({
       outputDir,
       outputPrefix,
       pageRanges,
+      splitEvery,
     });
 
     const outputs = [];

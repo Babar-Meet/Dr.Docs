@@ -6,7 +6,7 @@ import fs from "fs-extra";
 import { PDFDocument } from "pdf-lib";
 import { AppError } from "../../../utils/errors.js";
 import { SECURE_ENCRYPTION_MESSAGE } from "../../../utils/constants.js";
-import { mergePdfFiles, splitPdfByRanges } from "../../../utils/processors/mergeSplitProcessor.js";
+import { mergePdfFiles, splitPdfByRanges, fixedRangeTokens } from "../../../utils/processors/mergeSplitProcessor.js";
 import { processFile } from "../../../utils/processors/router.js";
 
 const TMP_ROOT = path.join(os.tmpdir(), `drdocs-mergeSplit-${Date.now()}`);
@@ -306,6 +306,74 @@ describe("mergeSplitProcessor", () => {
         const doc = await PDFDocument.load(await fs.readFile(o.outputPath));
         assert.equal(doc.getPageCount(), 1);
       }
+    });
+
+    it("fixedRangeTokens chunks pages with a shorter last part", () => {
+      assert.equal(fixedRangeTokens(15, 2), "1-2,3-4,5-6,7-8,9-10,11-12,13-14,15");
+      assert.equal(fixedRangeTokens(15, 5), "1-5,6-10,11-15");
+      assert.equal(fixedRangeTokens(15, 15), "1-15");
+      assert.equal(fixedRangeTokens(4, 9), "1-4");
+      assert.equal(fixedRangeTokens(3, 1), "1,2,3");
+    });
+
+    it("splitEvery chunks the whole document (5 pages, every 2)", async () => {
+      const work = path.join(TMP_ROOT, "split-every-2");
+      await fs.ensureDir(work);
+      const pdf = await makePdf(work, "src.pdf", 5);
+      const outputs = await splitPdfByRanges({ inputPath: pdf, outputDir: work, outputPrefix: "doc", pageRanges: "", splitEvery: "2" });
+      assert.equal(outputs.length, 3);
+      const counts = [];
+      for (const o of outputs) {
+        const doc = await PDFDocument.load(await fs.readFile(o.outputPath));
+        counts.push(doc.getPageCount());
+      }
+      assert.deepEqual(counts, [2, 2, 1]);
+      assert.match(outputs[0].outputName, /part_1_pages_1-2\.pdf/);
+      assert.match(outputs[2].outputName, /part_3_page_5\.pdf/);
+    });
+
+    it("splitEvery wins over pageRanges when both arrive", async () => {
+      const work = path.join(TMP_ROOT, "split-every-wins");
+      await fs.ensureDir(work);
+      const pdf = await makePdf(work, "src.pdf", 5);
+      const outputs = await splitPdfByRanges({ inputPath: pdf, outputDir: work, outputPrefix: "doc", pageRanges: "1,2-3", splitEvery: "5" });
+      assert.equal(outputs.length, 1);
+      const doc = await PDFDocument.load(await fs.readFile(outputs[0].outputPath));
+      assert.equal(doc.getPageCount(), 5);
+    });
+
+    it("splitEvery accepts 1 and page-count-sized values", async () => {
+      const work = path.join(TMP_ROOT, "split-every-edges");
+      await fs.ensureDir(work);
+      const pdf = await makePdf(work, "src.pdf", 3);
+      const all = await splitPdfByRanges({ inputPath: pdf, outputDir: work, outputPrefix: "doc", splitEvery: "1" });
+      assert.equal(all.length, 3);
+      const one = await splitPdfByRanges({ inputPath: pdf, outputDir: path.join(work, "one"), outputPrefix: "doc", splitEvery: "3" });
+      assert.equal(one.length, 1);
+      const beyond = await splitPdfByRanges({ inputPath: pdf, outputDir: path.join(work, "beyond"), outputPrefix: "doc", splitEvery: "9" });
+      assert.equal(beyond.length, 1);
+    });
+
+    it("rejects splitEvery below 1 or not a number", async () => {
+      const work = path.join(TMP_ROOT, "split-every-bad");
+      await fs.ensureDir(work);
+      const pdf = await makePdf(work, "src.pdf", 3);
+      for (const bad of ["0", "-2", "abc"]) {
+        await assert.rejects(
+          () => splitPdfByRanges({ inputPath: pdf, outputDir: work, outputPrefix: "doc", splitEvery: bad }),
+          (err) =>
+            err.code === "UNSUPPORTED_FILE" &&
+            /Invalid split every/.test(err.details?.reason || ""),
+        );
+      }
+    });
+
+    it("splitEvery parses like the pageRanges parser does (trailing junk after digits)", async () => {
+      const work = path.join(TMP_ROOT, "split-every-junk");
+      await fs.ensureDir(work);
+      const pdf = await makePdf(work, "src.pdf", 3);
+      const outputs = await splitPdfByRanges({ inputPath: pdf, outputDir: work, outputPrefix: "doc", splitEvery: "1x" });
+      assert.equal(outputs.length, 3);
     });
 
     it("null/undefined pageRanges also means all pages individually", async () => {

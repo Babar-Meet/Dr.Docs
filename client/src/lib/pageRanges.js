@@ -119,6 +119,20 @@ export function firstPartIndexCoveringPage(page, rows, pageCount = null) {
   return -1;
 }
 
+// The part a page belongs to in the "every N pages" mode: consecutive
+// chunks, one-based. The server chunks pages into tokens the same way in
+// fixedRangeTokens(); tests pin the two together.
+export function fixedPartIndexForPage(page, every) {
+  return Math.floor((page - 1) / every) + 1;
+}
+
+// How many parts the "every N pages" mode creates, or null when the inputs
+// are not settled. The last part can be shorter than the rest.
+export function fixedPartCount(pageCount, every) {
+  if (pageCount === null || every < 1) return null;
+  return Math.ceil(pageCount / every);
+}
+
 // The click behavior for the page tiles: a click makes the page a part on
 // its own, and a second click removes that single-page part again. A page a
 // bigger part already covers is owned by the rows editor, so a click there

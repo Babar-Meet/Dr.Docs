@@ -46,6 +46,10 @@ export default function OptionsPanel({
       <SplitOptions
         pageRanges={state.pageRanges}
         setPageRanges={state.setPageRanges}
+        splitMode={state.splitMode}
+        setSplitMode={state.setSplitMode}
+        splitEvery={state.splitEvery}
+        setSplitEvery={state.setSplitEvery}
         pdfPages={singlePdfPages}
         file={files[0] || null}
       />

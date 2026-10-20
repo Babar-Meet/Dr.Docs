@@ -1,12 +1,14 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { normalizePageRanges } from "../../utils/processors/mergeSplitProcessor.js";
+import { normalizePageRanges, fixedRangeTokens } from "../../utils/processors/mergeSplitProcessor.js";
 import {
   parseRangeParts,
   rangeRowReason,
   rangeRowStatus,
   rangesStringFromRows,
   firstPartIndexCoveringPage,
+  fixedPartIndexForPage,
+  fixedPartCount,
   nextCandidatePage,
   togglePagePart,
 } from "../../client/src/lib/pageRanges.js";
@@ -186,6 +188,53 @@ describe("page tile clicks", () => {
     rows = togglePagePart(rows, 3);
     assert.equal(rangesStringFromRows(rows), "3");
   });
+});
+
+describe("every N pages mode", () => {
+  // The client badges pages by chunk math and the server cuts the PDF by
+  // the token string. This battery pins the two together: for every page,
+  // the badge the client shows must name the part the server creates.
+  for (const [pageCount, every] of [
+    [15, 2],
+    [15, 5],
+    [15, 15],
+    [15, 16],
+    [4, 9],
+    [1, 1],
+    [7, 3],
+  ]) {
+    it(`badges agree with the server chunks: ${pageCount} pages every ${every}`, () => {
+      const tokens = fixedRangeTokens(pageCount, every);
+      const parts = parseRangeParts(tokens).map((row) =>
+        rangeRowStatus(row, pageCount),
+      );
+      assert.equal(partsCreated(tokens), parts.length);
+      assert.equal(
+        parts.filter((status) => status.valid).length,
+        parts.length,
+      );
+      for (let page = 1; page <= pageCount; page++) {
+        const covered = parts.findIndex(
+          (status) => status.from <= page && page <= status.to,
+        );
+        assert.equal(covered + 1, fixedPartIndexForPage(page, every));
+      }
+      // The live count on the panel matches the parts the server makes.
+      assert.equal(fixedPartCount(pageCount, every), parts.length);
+    });
+  }
+
+  it("the last part carries the leftover pages", () => {
+    const tokens = fixedRangeTokens(7, 3);
+    assert.equal(tokens, "1-3,4-6,7");
+    const [last] = parseRangeParts(tokens).slice(-1);
+    const status = rangeRowStatus(last, 7);
+    assert.equal(status.to - status.from + 1, 1);
+  });
+
+  function partsCreated(tokens) {
+    return parseRangeParts(tokens).length;
+  }
 });
 
 describe("part badge and next candidate", () => {

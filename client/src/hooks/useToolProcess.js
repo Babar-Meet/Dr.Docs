@@ -38,6 +38,8 @@ export default function useToolProcess(tool) {
   const [dragActive, setDragActive] = useState(false);
   const [targetFormat, setTargetFormat] = useState(() => tool.targetFormat || "");
   const [pageRanges, setPageRanges] = useState("");
+  const [splitMode, setSplitMode] = useState("parts");
+  const [splitEvery, setSplitEvery] = useState("");
   // Rotate tool state: UI mode plus one net rotation value per mode. Net
   // deltas are 0 (nothing) or 90, 180, 270 clockwise. LEFT maps to 270.
   // Preview mode is the default: most people turn individual pages, so the
@@ -427,6 +429,7 @@ export default function useToolProcess(tool) {
         files: selectedFiles,
         targetFormat,
         pageRanges,
+        splitEvery: splitMode === "fixed" ? splitEvery : "",
         rotationAngle: rotateAnglePayload,
         pages: "all",
         password: password.trim() || "",
@@ -499,6 +502,10 @@ export default function useToolProcess(tool) {
     setTargetFormat,
     pageRanges,
     setPageRanges,
+    splitMode,
+    setSplitMode,
+    splitEvery,
+    setSplitEvery,
     rotateMode,
     setRotateMode,
     rotateAllDelta,

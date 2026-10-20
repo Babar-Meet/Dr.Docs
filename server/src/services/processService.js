@@ -59,6 +59,7 @@ export async function processUploadedFile(uploadedFile, options = {}) {
       operation: options.operation,
       targetFormat: options.targetFormat,
       pageRanges: options.pageRanges,
+      splitEvery: options.splitEvery,
       rotationAngle: options.rotationAngle,
       pages: options.pages,
       password: options.password,

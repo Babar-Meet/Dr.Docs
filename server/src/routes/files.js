@@ -21,6 +21,7 @@ router.post("/process", processUploadMiddleware, async (req, res, next) => {
     const operation = (req.body.operation || "unlock").toLowerCase();
     const targetFormat = req.body.targetFormat || "";
     const pageRanges = req.body.pageRanges || "";
+    const splitEvery = req.body.splitEvery || "";
     const rotationAngle = req.body.rotationAngle || "90";
     const pages = req.body.pages || "all";
     const password = req.body.password || "";
@@ -44,6 +45,7 @@ router.post("/process", processUploadMiddleware, async (req, res, next) => {
         operation,
         targetFormat,
         pageRanges,
+        splitEvery,
         rotationAngle,
         pages,
         password,

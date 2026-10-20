@@ -113,7 +113,7 @@ export const TOOLS = [
     operation: "split",
     help: "Split one PDF into multiple files",
     detail:
-      "Split exports real PDF files (not ZIP-only packaging), and each output can be downloaded individually.",
+      "Split cuts one PDF into separate PDF files: pick custom parts, or split every N pages. Each output can be downloaded individually.",
     kind: "split",
     sourceExtensions: [".pdf"],
     targetFormat: null,
