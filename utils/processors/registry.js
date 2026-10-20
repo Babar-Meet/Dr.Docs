@@ -226,6 +226,15 @@ async function convertByType({
     });
     return "File converted successfully.";
   }
+  // A .pdf source imports as a Draw document by default, and a Draw model
+  // cannot be stored through the docx, odt, rtf or pptx export filters, so
+  // sofficeInfilterForConvert picks the import filter that loads the same
+  // file into the module that owns the target's export filter
+  // (writer_pdf_import for docx/odt/rtf, impress_pdf_import for pptx). For
+  // every other source and target it returns null, which keeps the plain
+  // soffice call those pairs have always used. Encrypted PDFs fail the
+  // soffice load itself ("source file could not be loaded"), so strong
+  // encryption is never bypassed here.
   await convertWithLibreOffice({
     inputPath,
     targetFormat,
