@@ -4,7 +4,9 @@
 //   files   - the detected input list, [path, originalName, mimeType]
 //   runtime - { outputBasePath, workDir, qpdfBin, libreOfficeBin }
 // A new operation lands as one handler in this file plus one registry line;
-// router.js, processService.js and the route layer do not change for it.
+// processService stays unchanged, and router.js and files.js only gain lines
+// when the operation carries a new option field. The per-operation flow
+// itself lives only here.
 import path from "node:path";
 import fs from "fs-extra";
 import {
@@ -239,11 +241,6 @@ async function convertByType({
 }
 
 async function runConvert({ options, files, runtime }) {
-  const normalizedTarget = normalizeTargetFormat(options.targetFormat);
-  if (!normalizedTarget) {
-    throw unsupportedFile("A target format is required for convert mode.");
-  }
-
   const outputs = [];
   // The raster pair is the only convert route that turns one file into
   // several outputs, so it shapes the summary sentence like split does;
@@ -256,6 +253,13 @@ async function runConvert({ options, files, runtime }) {
     const fileType = detectFileType(file.originalName, file.mimeType);
     if (!fileType) {
       throw unsupportedFile(`Unsupported file: ${file.originalName}`);
+    }
+
+    // Kept inside the loop on purpose: the frozen boundary reports an
+    // undetectable file before a missing target format for that file.
+    const normalizedTarget = normalizeTargetFormat(options.targetFormat);
+    if (!normalizedTarget) {
+      throw unsupportedFile("A target format is required for convert mode.");
     }
 
     const perFileBase = createPerFileOutputBase(

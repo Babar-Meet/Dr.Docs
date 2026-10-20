@@ -4,7 +4,7 @@
 // A new option lands its UI in the options component, one value transform
 // in buildRequestOptionValues, one wire entry in FIELDS, one validation in
 // FAILURE_CHECKS. The hook and api.js stay untouched.
-import { getExtension } from "./fileUtils.js";
+import { getExtension } from "./fileUtils.js"; // explicit .js: this module is imported from node:test runs, which need the extension for ESM
 
 export function describeExtensions(extensions) {
   return extensions
@@ -22,7 +22,7 @@ function mergeTargetValid(targetFormat) {
   return ["pdf", "docx"].includes((targetFormat || "").toLowerCase());
 }
 
-export const FAILURE_CHECKS = {
+const FAILURE_CHECKS = {
   merge({ files, state }) {
     if (files.length < 2) return "Merge requires at least two files";
     if (!mergeTargetValid(state.targetFormat)) {
@@ -99,7 +99,23 @@ export function validateToolState({ operation, tool, files, state, flags }) {
 
 // Per-operation request values, built from the hook's state. Every transform
 // here (mode switches, trimming, percent to fraction, rotate payload shapes)
-// is frozen request behavior.
+// is frozen request behavior. Fields a tool does not use travel as "".
+const EMPTY_OPTION_VALUES = {
+  targetFormat: "",
+  pageRanges: "",
+  splitEvery: "",
+  rotationAngle: "",
+  pages: "",
+  password: "",
+  rotations: "",
+  watermarkText: "",
+  watermarkAngle: "",
+  watermarkOpacity: "",
+  watermarkType: "",
+  pageNumberPosition: "",
+  pageNumberMargin: "",
+};
+
 export function buildRequestOptionValues({ operation, state }) {
   switch (operation) {
     case "rotate": {
@@ -112,142 +128,53 @@ export function buildRequestOptionValues({ operation, state }) {
             .join(",")
         : "";
       return {
-        targetFormat: "",
-        pageRanges: "",
-        splitEvery: "",
+        ...EMPTY_OPTION_VALUES,
         rotationAngle: String(state.rotateAllDelta || "90"),
         pages: "all",
-        password: "",
         rotations: rotationsPayload,
-        watermarkText: "",
-        watermarkAngle: "",
-        watermarkOpacity: "",
-        watermarkType: "",
-        pageNumberPosition: "",
-        pageNumberMargin: "",
       };
     }
 
     case "split":
       return {
-        targetFormat: "",
+        ...EMPTY_OPTION_VALUES,
         pageRanges: state.pageRanges,
         splitEvery: state.splitMode === "fixed" ? state.splitEvery : "",
-        rotationAngle: "",
-        pages: "",
-        password: "",
-        rotations: "",
-        watermarkText: "",
-        watermarkAngle: "",
-        watermarkOpacity: "",
-        watermarkType: "",
-        pageNumberPosition: "",
-        pageNumberMargin: "",
       };
 
     case "convert":
     case "merge":
       return {
+        ...EMPTY_OPTION_VALUES,
         targetFormat: state.targetFormat,
-        pageRanges: "",
-        splitEvery: "",
-        rotationAngle: "",
-        pages: "",
-        password: "",
-        rotations: "",
-        watermarkText: "",
-        watermarkAngle: "",
-        watermarkOpacity: "",
-        watermarkType: "",
-        pageNumberPosition: "",
-        pageNumberMargin: "",
       };
 
     case "protect":
-      return {
-        targetFormat: "",
-        pageRanges: "",
-        splitEvery: "",
-        rotationAngle: "",
-        pages: "",
-        password: state.password.trim() || "",
-        rotations: "",
-        watermarkText: "",
-        watermarkAngle: "",
-        watermarkOpacity: "",
-        watermarkType: "",
-        pageNumberPosition: "",
-        pageNumberMargin: "",
-      };
-
     case "unlock":
       return {
-        targetFormat: "",
-        pageRanges: "",
-        splitEvery: "",
-        rotationAngle: "",
-        pages: "",
+        ...EMPTY_OPTION_VALUES,
         password: state.password.trim() || "",
-        rotations: "",
-        watermarkText: "",
-        watermarkAngle: "",
-        watermarkOpacity: "",
-        watermarkType: "",
-        pageNumberPosition: "",
-        pageNumberMargin: "",
       };
 
     case "watermark":
       return {
-        targetFormat: "",
-        pageRanges: "",
-        splitEvery: "",
-        rotationAngle: "",
-        pages: "",
-        password: "",
-        rotations: "",
+        ...EMPTY_OPTION_VALUES,
         watermarkText: state.watermarkText.trim(),
         watermarkAngle: state.watermarkAngle,
         watermarkOpacity: String(Number(state.watermarkOpacity) / 100),
         watermarkType: state.watermarkType,
-        pageNumberPosition: "",
-        pageNumberMargin: "",
       };
 
     case "pagenumbers":
       return {
-        targetFormat: "",
-        pageRanges: "",
-        splitEvery: "",
-        rotationAngle: "",
-        pages: "",
-        password: "",
-        rotations: "",
-        watermarkText: "",
-        watermarkAngle: "",
-        watermarkOpacity: "",
-        watermarkType: "",
+        ...EMPTY_OPTION_VALUES,
         pageNumberPosition: state.pageNumberPosition,
         pageNumberMargin: state.pageNumberMargin,
       };
 
     default:
       // compress, ocr, repair: files only, no option fields on the wire.
-      return {
-        targetFormat: "",
-        pageRanges: "",
-        splitEvery: "",
-        rotationAngle: "",
-        pages: "",
-        password: "",
-        rotations: "",
-        watermarkText: "",
-        watermarkAngle: "",
-        watermarkOpacity: "",
-        watermarkType: "",
-        pageNumberPosition: "",
-        pageNumberMargin: "",
-      };
+      return { ...EMPTY_OPTION_VALUES };
   }
 }
 
@@ -280,22 +207,29 @@ const FIELDS = {
   ],
 };
 
-// Adds the operation's wire fields to FormData in the frozen order.
+// Adds the operation's wire fields to FormData in the frozen order. A value
+// that is genuinely absent (undefined) is skipped rather than stringified:
+// calling it with a partial bag would otherwise put the word "undefined" on
+// the wire under an always-append field.
 export function appendOptionFields(formData, { operation, values }) {
   const specs = FIELDS[operation] || [];
   for (const spec of specs) {
-    const raw = `${values[spec.name]}`;
+    const value = values[spec.name];
+    if (value === undefined) {
+      continue;
+    }
+    const raw = `${value}`;
     if (spec.mode === "truthy" && raw.trim() === "") {
       continue;
     }
     // Truthy fields travelled trimmed on the wire long before the table
     // existed; keep that exact byte shape.
-    const value = spec.fallback
+    const wire = spec.fallback
       ? raw.trim() || spec.fallback
       : spec.mode === "truthy"
         ? raw.trim()
         : raw;
-    formData.append(spec.name, value);
+    formData.append(spec.name, wire);
   }
   return formData;
 }

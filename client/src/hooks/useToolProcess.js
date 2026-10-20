@@ -383,7 +383,8 @@ export default function useToolProcess(tool) {
     return "";
   }, [status]);
 
-  return {    selectedFiles,
+  return {
+    selectedFiles,
     inspections,
     rejectedCount,
     singlePdfPages,
