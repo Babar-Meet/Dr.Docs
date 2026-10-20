@@ -9,6 +9,14 @@
 - `DESIGN.md` is the ONLY theme spec file - do not create `THEME.md` or other duplicates. This keeps context window small (one file, not two). If a harness looks for `THEME.md`, point it to `DESIGN.md` via this AGENTS.md. The tokens themselves live in `client/src/index.css` (CSS variables) and `client/tailwind.config.js` (color and font mapping); the `DESIGN.md` Implementation section names the CSS variables in `client/src/index.css` and says Tailwind colors use `var(--ink)` etc.
 - If no `DESIGN.md` change is requested, do not alter the design system.
 
+## PRODUCT DIRECTION - ONE HOME FOR ALL DOCUMENT WORK, APP LATER
+
+Dr.Docs is one home for every document job a user might ask for: the PDF core tools, Office conversions, image tools, unlock, split, merge, watermark, page numbers, protect, repair, compress, and queued ones such as PDF/A and forms. Three standing rules follow from that roadmap:
+
+- Scalable and maintainable: every new feature keeps the same shape (constants entry, processor file, contract tests, tool page), follows the frozen contract, and follows `DESIGN.md`. Nothing user-facing ships outside that shape.
+- Bundleable as a desktop app later: `utils/` is the engine and must stay framework-free (no Express and no React imports). `server/` and `client/` are swappable transports, and the client reaches the engine only through the seam in `client/src/lib/api.js`. An Electron (or similar) bundle packs the repo as-is with electron-builder; npm dependencies stay under `node_modules` exactly where npm lays them out, so never relocate dependencies.
+- External binaries are bundle inputs: `qpdf` and `soffice` resolve through `server/src/config.js` in the order env var, then `vendor/bin/` (portable drop folder, gitignored), then PATH. Never hard-code a binary path outside `config.js`. Copy a tool's release files (exe plus its DLL sidecars) into `vendor/bin/` to make a fully offline bundle.
+
 ## FROZEN CORE CONTRACT - READ BEFORE ANY CHANGE
 
 Every shipped tool and its exact behaviour is frozen: the original seven, plus `repair` that shipped as the eighth and `protect` that shipped as the ninth. This section is the contract, and it outranks refactor freedom. Read it before touching anything under `utils/`, `server/src/routes/`, `server/src/services/`, or `client/src/App.jsx`.
@@ -50,10 +58,10 @@ Enforcement: `tests/` pins this, and every new tool arrives with its own tests. 
 ## Structure
 - `DESIGN.md` - Midnight Orange Design System. Single source of truth for all UI decisions. Every model reads this via AGENTS.md.
 - `client/` - React 18 SPA. All UI in `client/src/App.jsx` (no component split). Entry `main.jsx` wraps `<BrowserRouter>`. Build: Vite 5 + Tailwind 3. Must follow `DESIGN.md`.
-- `server/src/` - Express 4 API. `index.js` serves static `client/dist` when `client/dist/index.html` exists, else a JSON hint on `/`. `routes/files.js` defines `POST /process` and `GET /download/:id`. `config.js` computes `server/tmp/{uploads,outputs,work}` and exports `SERVER_ROOT`/`TMP_ROOT`/`UPLOAD_DIR`/`OUTPUT_DIR`/`WORK_DIR`/`PORT`/`QPDF_BIN`/`LIBREOFFICE_BIN`/`CLEANUP_INTERVAL_MS`/`DOWNLOAD_TTL_MS` + `ensureRuntimeDirectories`.
-- `utils/` - **not a workspace** - imported via relative paths (`../../../utils/...`). Contains `constants.js`, `errors.js`, `helpers/`, `processors/`. `processors/router.js` is the sole dispatch entry point.
+- `server/src/` - Express 4 API. `index.js` serves static `client/dist` when `client/dist/index.html` exists, else a JSON hint on `/`. `routes/files.js` defines `POST /process` and `GET /download/:id`. `config.js` computes `server/tmp/{uploads,outputs,work}` and exports `SERVER_ROOT`/`TMP_ROOT`/`UPLOAD_DIR`/`OUTPUT_DIR`/`WORK_DIR`/`PORT`/`QPDF_BIN`/`LIBREOFFICE_BIN`/`CLEANUP_INTERVAL_MS`/`DOWNLOAD_TTL_MS` + `ensureRuntimeDirectories`, plus the binary bundle helpers `REPO_ROOT`/`VENDOR_BIN_DIR`/`resolveBinaryLocation`/`locateVendorBinary`.
+- `utils/` - **not a workspace** - imported via relative paths (`../../../utils/...`). Contains `constants.js`, `errors.js`, `helpers/`, `processors/`. `processors/router.js` is the sole dispatch entry point. Engine rule: `utils/` stays framework-free so a later desktop bundle can reuse it.
 - `tests/` - **not a workspace** - node:test TAP suite (contract, helpers, processors, server routes/middleware/services, security). Run from the repo root with `npm test`.
-- `server/tmp/` and `client/dist/` are runtime/build artifacts (gitignored). `Temp/` at repo root is scratch for transient agent docs - don't commit it.
+- `server/tmp/` and `client/dist/` are runtime/build artifacts (gitignored). `Temp/` at repo root is scratch for transient agent docs - don't commit it. `vendor/` (except its README) holds bundled external binaries when present - don't commit it either.
 
 ## Conventions & Quirks
 - ESM only: all `package.json` have `"type":"module"` - use `import`, not `require`.
@@ -66,8 +74,9 @@ Enforcement: `tests/` pins this, and every new tool arrives with its own tests. 
 - Frontend `App.jsx` mirrors `CONVERSION_TARGETS` locally - keep in sync with `utils/constants.js` when changing targets. `operation` values are `unlock|convert|merge|split|ocr|rotate|compress|repair` (`OPERATION_MODES`).
 
 ## Env
-- Vars reach the process through the real process environment only - `config.js` reads bare `process.env`. Nothing loads `server/.env`: no dotenv dependency, no `process.loadEnvFile`, no `--env-file` flag in any script. `setup.bat` copies `server/.env.example` to `server/.env`, and that file is inert until a loader exists, so setting a var there changes nothing. Defaults: `PORT=5000`, `QPDF_BIN=qpdf`, `LIBREOFFICE_BIN=soffice` (`config.js:14-16`).
+- Vars reach the process through the real process environment only - `config.js` reads bare `process.env`. Nothing loads `server/.env`: no dotenv dependency, no `process.loadEnvFile`, no `--env-file` flag in any script. `setup.bat` copies `server/.env.example` to `server/.env`, and that file is inert until a loader exists, so setting a var there changes nothing. Defaults: `PORT=5000`; binaries resolve in the order env var (`QPDF_BIN`, `LIBREOFFICE_BIN`), then `vendor/bin/<name>` (`server/src/config.js`, Windows also tries `<name>.exe`; the folder is gitignored), then PATH (`qpdf`, `soffice`). The `vendor/bin/` path needs no env loader and works on bare startup; tests pass with or without the folder populated.
 - Generated dirs via `ensureRuntimeDirectories()` on startup - don't manually create `server/tmp/*`.
+- Do not manually create `vendor/bin` either: it stays absent until a bundle needs it, and an empty or missing folder is the tested default.
 
 ## Autonomous Loop - iLovePDF Competitor Mode
 **You are busy - do NOT ask for permission. Run this loop until force-stopped.**

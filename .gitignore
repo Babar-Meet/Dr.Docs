@@ -3,6 +3,8 @@ client/node_modules/
 server/node_modules/
 client/dist/
 server/tmp/
+vendor/*
+!vendor/README.md
 Temp/
 Docs/
 .opencode/
