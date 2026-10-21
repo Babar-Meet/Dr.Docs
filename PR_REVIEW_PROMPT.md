@@ -141,6 +141,9 @@ Work method:
 ## Per-round fill-in (working agent completes, then sends everything)
 
 - REPO PATH, BRANCH, PR URL, commit list.
+- MODEL: which model made the change. The PR title and body both carry it
+  per AGENTS.md Git Workflow point 3, and a title or body that hides the
+  model is a finding.
 - GOAL: the outcome in the owner's own words, plus what "done" means here.
 - FROZEN ANGLE: which frozen rules this diff must not touch (byte-equal
   outputs, error shapes, defaults; for docs rounds, what the text must
