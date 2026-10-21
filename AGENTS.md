@@ -88,7 +88,7 @@ Loop contract (repeat forever):
 4. **STAGE** - After green, `git add` only in-scope files (never `package-lock.json` or any other lockfile, since `.gitignore` has no lockfile entry; never junk/secrets; never `server/tmp`/`client/dist`/`Temp`/`Docs`/`.env`/`*.log`/`eng.traineddata`/`node_modules`, all matched by `.gitignore`; and never `git add .`, which stages untracked non-ignored dirs such as `.opencode/`). Commit and push follow the Git Workflow section below: feature branch, PR, two AI review rounds, then merge. Include `DESIGN.md` if it changed.
 5. **NEXT ROUND** - If not forcefully stopped (`stop`/`pause`/`Ctrl+C` or user message), immediately start next RESEARCH round. If stopped, halt instantly.
 
-State file: `Temp/LOOP_STATE.md` tracks `round`, `model`, `last_feature`, `status`, `next_candidate` (the model line per Git Workflow point 5). Update it each round. `Temp/` is gitignored on purpose (`tests/security/` asserts `Temp/` is never tracked), so loop state stays on the local disk and does not survive a clean checkout. Details/long analysis go to `Temp/` - never bloat `AGENTS.md`.
+State file: `Temp/LOOP_STATE.md` tracks `round`, `model`, `last_feature`, `status`, `next_candidate`, plus the round's PR number and merge result (Git Workflow point 5). Update it each round. `Temp/` is gitignored on purpose (`tests/security/` asserts `Temp/` is never tracked), so loop state stays on the local disk and does not survive a clean checkout. Details/long analysis go to `Temp/` - never bloat `AGENTS.md`.
 
 ## Git Workflow - Branch First, PR, Two AI Reviews, Then Merge
 
