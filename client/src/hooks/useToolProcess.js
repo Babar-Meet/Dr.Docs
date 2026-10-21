@@ -370,7 +370,7 @@ export default function useToolProcess(tool) {
     }
   }
 
-  // Page count of the single selected PDF, for the split and rotate inputs.
+  // Page count of the single selected PDF, for the split, rotate and organize inputs.
   const singlePdfPages = useMemo(() => {
     if (selectedFiles.length !== 1) return null;
     const [onlyFile] = selectedFiles;

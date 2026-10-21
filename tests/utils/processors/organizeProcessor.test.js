@@ -24,6 +24,10 @@ function invalidReason(token, pageCount) {
   return `Invalid page: ${token}. Use page numbers between 1 and ${pageCount}.`;
 }
 
+function capReason(maxEntries) {
+  return `Use at most ${maxEntries} page entries.`;
+}
+
 describe("organizeProcessor", () => {
   before(async () => {
     await fs.ensureDir(TMP_ROOT);
@@ -87,6 +91,31 @@ describe("organizeProcessor", () => {
     const texts = await runOrganize("duplicate", "1,1");
     assert.equal(texts.length, 2);
     assert.deepEqual(texts, ["P one", "P one"]);
+  });
+
+  it("a 2 page source takes the full 200 entry floor into a 200 page output", async () => {
+    // Same shape as makeTextPdf, kept at exactly 2 pages so the 200 entry
+    // floor (not the twice-page-count rule) is the one that binds here.
+    const work = path.join(TMP_ROOT, "floor-200");
+    await fs.ensureDir(work);
+    const doc = await PDFDocument.create();
+    const font = await doc.embedFont(StandardFonts.Helvetica);
+    for (const text of ["P one", "P two"]) {
+      const page = doc.addPage([200, 200]);
+      page.drawText(text, { x: 20, y: 100, size: 24, font });
+    }
+    const input = path.join(work, "in.pdf");
+    await fs.writeFile(input, await doc.save());
+    const order = Array.from({ length: 200 }, (_, index) => (index % 2 === 0 ? 1 : 2));
+    const out = path.join(work, "out.pdf");
+    await organizePdf({
+      inputPath: input,
+      outputPath: out,
+      organizePages: order.join(","),
+    });
+    assert.ok(await fs.pathExists(out));
+    const output = await PDFDocument.load(await fs.readFile(out));
+    assert.equal(output.getPageCount(), 200);
   });
 
   it("identity 1,2,3 keeps every page in order", async () => {
@@ -222,6 +251,38 @@ describe("organizeProcessor", () => {
     assert.throws(
       () => parseOrganizeOrder("4", 3),
       (err) => err.details.reason === invalidReason("4", 3),
+    );
+  });
+
+  it("parseOrganizeOrder caps the entries at twice the page count", async () => {
+    // A 300 page source means cap 600: 300 alternating entries parse and
+    // 601 refuse by length before any per-token check runs.
+    const inCap = Array.from({ length: 300 }, (_, index) => (index % 2 === 0 ? 5 : 7));
+    assert.deepEqual(parseOrganizeOrder(inCap.join(","), 300), inCap);
+    const pastCap = Array.from({ length: 601 }, (_, index) => (index % 2 === 0 ? 5 : 7));
+    assert.throws(
+      () => parseOrganizeOrder(pastCap.join(","), 300),
+      (err) =>
+        err instanceof AppError &&
+        err.code === "UNSUPPORTED_FILE" &&
+        err.statusCode === 400 &&
+        err.details.reason === capReason(600),
+    );
+  });
+
+  it("parseOrganizeOrder keeps the 200 entry floor on small sources", async () => {
+    // A 2 page source caps at 200, not at 4: 200 alternating entries parse
+    // and 201 refuse by length.
+    const inCap = Array.from({ length: 200 }, (_, index) => (index % 2 === 0 ? 1 : 2));
+    assert.deepEqual(parseOrganizeOrder(inCap.join(","), 2), inCap);
+    const pastCap = inCap.concat(1);
+    assert.throws(
+      () => parseOrganizeOrder(pastCap.join(","), 2),
+      (err) =>
+        err instanceof AppError &&
+        err.code === "UNSUPPORTED_FILE" &&
+        err.statusCode === 400 &&
+        err.details.reason === capReason(200),
     );
   });
 });

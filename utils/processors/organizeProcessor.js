@@ -29,7 +29,9 @@ function invalid(reason) {
 // parses the same organizePages string and this is the rule it must agree
 // with. Tokens are trimmed and empty tokens are dropped; every remaining
 // token must be pure digits within 1..pageCount. The first bad token refuses
-// with its own message.
+// with its own message. The entry cap bounds the arrangement at twice the
+// source page count, never below 200, so the output size stays bounded by
+// the input.
 export function parseOrganizeOrder(organizePages, pageCount) {
   const raw = String(organizePages ?? "").trim();
   if (!raw) {
@@ -43,6 +45,11 @@ export function parseOrganizeOrder(organizePages, pageCount) {
 
   if (tokens.length === 0) {
     throw invalid("Choose how to arrange the pages before organizing.");
+  }
+
+  const maxEntries = Math.max(pageCount * 2, 200);
+  if (tokens.length > maxEntries) {
+    throw invalid(`Use at most ${maxEntries} page entries.`);
   }
 
   const entries = [];
