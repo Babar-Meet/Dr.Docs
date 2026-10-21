@@ -61,4 +61,5 @@ export const OPERATION_MODES = new Set([
   "protect",
   "watermark",
   "pagenumbers",
+  "organize",
 ]);

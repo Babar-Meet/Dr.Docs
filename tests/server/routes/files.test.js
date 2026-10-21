@@ -199,6 +199,55 @@ describe("routes/files validation POST /process", () => {
     });
   });
 
+  describe("organize operation end to end", () => {
+    let pdfPath;
+    before(async () => {
+      pdfPath = path.join(TMP_ROOT, "organize-roundtrip.pdf");
+      const { PDFDocument } = await import("pdf-lib");
+      const doc = await PDFDocument.create();
+      // Distinct page sizes make the output order readable from bytes:
+      // page 1 is 200x200, page 2 is 300x300, page 3 is 400x400.
+      doc.addPage([200, 200]);
+      doc.addPage([300, 300]);
+      doc.addPage([400, 400]);
+      await fs.writeFile(pdfPath, await doc.save());
+    });
+
+    it("returns the rearranged PDF with the frozen success bytes", async () => {
+      const { status, body } = await postProcess({
+        fields: { operation: "organize", organizePages: "2,1" },
+        files: [{ fieldName: "files", filePath: pdfPath, fileName: "organize-me.pdf", mimeType: "application/pdf" }],
+      });
+      assert.equal(status, 200);
+      assert.equal(body.status, "success");
+      assert.equal(body.message, "Organized 1 PDF(s).");
+      assert.equal(body.results.length, 1);
+      assert.equal(body.results[0].downloadName, "organize-me_organized.pdf");
+      assert.equal(body.results[0].message, "PDF organized successfully.");
+
+      const download = await fetch(`${baseUrl}${body.results[0].downloadUrl}`);
+      assert.equal(download.status, 200);
+      const bytes = Buffer.from(await download.arrayBuffer());
+      const { PDFDocument } = await import("pdf-lib");
+      const out = await PDFDocument.load(bytes);
+      assert.equal(out.getPageCount(), 2);
+      assert.deepEqual(
+        out.getPages().map((page) => page.getWidth()),
+        [300, 200],
+      );
+    });
+
+    it("returns 400 UNSUPPORTED_FILE when organizePages is missing", async () => {
+      const { status, body } = await postProcess({
+        fields: { operation: "organize" },
+        files: [{ fieldName: "files", filePath: pdfPath, fileName: "organize-me.pdf", mimeType: "application/pdf" }],
+      });
+      assert.equal(status, 400);
+      assert.equal(body.code, "UNSUPPORTED_FILE");
+      assert.equal(body.reason, "Choose how to arrange the pages before organizing.");
+    });
+  });
+
   describe("unsupported file type via upload filter", () => {
     it("returns 400 when uploading .txt (unsupported extension)", async () => {
       const txtPath = path.join(TMP_ROOT, "notes.txt");

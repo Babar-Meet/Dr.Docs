@@ -111,7 +111,7 @@ export const TOOL_SENTENCES = {
   "rotate-pdf": "Rotate all pages or turn pages live, one at a time.",
   "unlock-pdf": "Remove restrictions, or open a locked PDF with its password.",
   "protect-pdf": "Add a password with 256-bit AES encryption.",
-  "organize-pdf": "Not built yet: reorder and delete pages of one PDF.",
+  "organize-pdf": "Reorder, duplicate, or remove pages of one PDF.",
   "pdf-to-pdfa": "Not built yet: rewrite a PDF into the PDF/A archive format.",
   "repair-pdf": "Rebuild a damaged file and keep its original format.",
   "add-page-numbers": "Stamp 1, 2, 3 in nine positions.",

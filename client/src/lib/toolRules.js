@@ -88,6 +88,16 @@ const FAILURE_CHECKS = {
     if (!everyFileIsPdf(files)) return "Page numbers supports PDF files only.";
     return "";
   },
+
+  organize({ files, state }) {
+    if (files.length !== 1 || getExtension(files[0].name) !== ".pdf") {
+      return "Organize requires exactly one PDF file.";
+    }
+    if (!state.organizeOrder.trim()) {
+      return "Choose how to arrange the pages before organizing.";
+    }
+    return "";
+  },
 };
 
 // Returns "" when the tool state is clean to run, otherwise the refusal
@@ -114,6 +124,7 @@ const EMPTY_OPTION_VALUES = {
   watermarkType: "",
   pageNumberPosition: "",
   pageNumberMargin: "",
+  organizePages: "",
 };
 
 export function buildRequestOptionValues({ operation, state }) {
@@ -172,6 +183,12 @@ export function buildRequestOptionValues({ operation, state }) {
         pageNumberMargin: state.pageNumberMargin,
       };
 
+    case "organize":
+      return {
+        ...EMPTY_OPTION_VALUES,
+        organizePages: state.organizeOrder.trim(),
+      };
+
     default:
       // compress, ocr, repair: files only, no option fields on the wire.
       return { ...EMPTY_OPTION_VALUES };
@@ -205,6 +222,7 @@ const FIELDS = {
     { name: "pageNumberPosition", mode: "always" },
     { name: "pageNumberMargin", mode: "always" },
   ],
+  organize: [{ name: "organizePages", mode: "always" }],
 };
 
 // Adds the operation's wire fields to FormData in the frozen order. A value
@@ -244,6 +262,8 @@ export function requiredOptionMet({ operation, values }) {
       return values.watermarkText.trim() !== "";
     case "rotate":
       return values.rotateRunnable === true;
+    case "organize":
+      return values.organizeOrder.trim() !== "";
     default:
       return true;
   }

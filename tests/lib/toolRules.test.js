@@ -35,6 +35,7 @@ function baseState(overrides = {}) {
     watermarkType: "standard",
     pageNumberPosition: "bottom-center",
     pageNumberMargin: "24",
+    organizeOrder: "",
     ...overrides,
   };
 }
@@ -55,6 +56,7 @@ function zeroedState(overrides = {}) {
     watermarkType: "",
     pageNumberPosition: "",
     pageNumberMargin: "",
+    organizePages: "",
     ...overrides,
   };
 }
@@ -205,6 +207,30 @@ describe("validateToolState: refusal strings", () => {
       );
     }
   });
+
+  it("organize accepts exactly one PDF with a non-empty arrangement", () => {
+    const base = { operation: "organize", tool: { operation: "organize" }, state: baseState(), flags: {} };
+    assert.equal(
+      validateToolState({ ...base, files: [pdfFile(), pdfFile("c.pdf")] }),
+      "Organize requires exactly one PDF file.",
+    );
+    assert.equal(
+      validateToolState({ ...base, files: [docxFile()] }),
+      "Organize requires exactly one PDF file.",
+    );
+    assert.equal(
+      validateToolState({ ...base, files: [pdfFile()] }),
+      "Choose how to arrange the pages before organizing.",
+    );
+    assert.equal(
+      validateToolState({ ...base, files: [pdfFile()], state: baseState({ organizeOrder: "   " }) }),
+      "Choose how to arrange the pages before organizing.",
+    );
+    assert.equal(
+      validateToolState({ ...base, files: [pdfFile()], state: baseState({ organizeOrder: "3,1,2" }) }),
+      "",
+    );
+  });
 });
 
 describe("buildRequestOptionValues: frozen transforms", () => {
@@ -310,6 +336,23 @@ describe("buildRequestOptionValues: frozen transforms", () => {
       assert.equal(values.pageRanges, "");
     }
   });
+
+  it("organize sends the trimmed arrangement and nothing else", () => {
+    assert.deepEqual(
+      buildRequestOptionValues({
+        operation: "organize",
+        state: baseState({ organizeOrder: " 3,1,2 " }),
+      }),
+      zeroedState({ organizePages: "3,1,2" }),
+    );
+    const empty = buildRequestOptionValues({
+      operation: "organize",
+      state: baseState(),
+    });
+    assert.equal(empty.organizePages, "");
+    assert.equal(empty.pageRanges, "");
+    assert.equal(empty.password, "");
+  });
 });
 
 describe("appendOptionFields: frozen wire fields", () => {
@@ -411,6 +454,23 @@ describe("appendOptionFields: frozen wire fields", () => {
       assert.equal([...form].length, 0);
     }
   });
+
+  it("organize always appends organizePages, empty or not", () => {
+    const arranged = formDataFactory();
+    appendOptionFields(arranged, {
+      operation: "organize",
+      values: { organizePages: "3,1,2" },
+    });
+    assert.equal(arranged.get("organizePages"), "3,1,2");
+    assert.equal([...arranged].length, 1);
+
+    const empty = formDataFactory();
+    appendOptionFields(empty, {
+      operation: "organize",
+      values: { organizePages: "" },
+    });
+    assert.equal(empty.get("organizePages"), "");
+  });
 });
 
 describe("requiredOptionMet and describeExtensions", () => {
@@ -438,6 +498,18 @@ describe("requiredOptionMet and describeExtensions", () => {
     for (const operation of ["unlock", "compress", "merge", "split", "convert", "ocr", "repair", "pagenumbers"]) {
       assert.equal(requiredOptionMet({ operation, values: {} }), true);
     }
+    assert.equal(
+      requiredOptionMet({ operation: "organize", values: { organizeOrder: " 3,1,2 " } }),
+      true,
+    );
+    assert.equal(
+      requiredOptionMet({ operation: "organize", values: { organizeOrder: "" } }),
+      false,
+    );
+    assert.equal(
+      requiredOptionMet({ operation: "organize", values: { organizeOrder: "   " } }),
+      false,
+    );
   });
 
   it("describeExtensions renders uppercase comma text", () => {

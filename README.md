@@ -116,7 +116,7 @@ Dr.Docs/
 |   |-- tmp/                     # runtime (gitignored): uploads, outputs, work
 |   -- package.json              # dr-docs-server
 |-- utils/                       # shared, not a workspace, imported via ../../../utils/
-|   |-- constants.js             # MIME_BY_EXTENSION, CONVERSION_TARGETS, OPERATION_MODES (8), SECURE_ENCRYPTION_MESSAGE plain English
+|   |-- constants.js             # MIME_BY_EXTENSION, CONVERSION_TARGETS, OPERATION_MODES (12), SECURE_ENCRYPTION_MESSAGE plain English
 |   |-- errors.js                # AppError(message, code="PROCESSING_FAILED", statusCode=500, details={})
 |   |-- helpers/
 |   |   |-- command.js           # spawn + timeout SIGTERM (4m for soffice)
@@ -179,11 +179,12 @@ Flow: upload -> multer uuid -> queue (2 concurrent) -> `router.processFile({oper
 
 ### `POST /process`
 `multipart/form-data`
-- `operation` default `unlock`: `unlock|convert|merge|split|ocr|rotate|compress|repair`
+- `operation` default `unlock`: `unlock|convert|merge|split|ocr|rotate|compress|repair|protect|watermark|pagenumbers|organize`
 - `targetFormat` for `convert` (e.g. `pdf`) and `merge` (`pdf|docx`)
 - `pageRanges` for `split` e.g. `1-3,5,7-10`
 - `rotationAngle` for `rotate`: `90|180|270`
 - `pages` for `rotate`: `all` or `1,3-5,8`
+- `organizePages` for `organize`: ordered original page numbers in output order, e.g. `3,1,2`
 - `files` (200 max) and `file` (10 max) merged, 50MB each
 
 Success 200, single input file:
