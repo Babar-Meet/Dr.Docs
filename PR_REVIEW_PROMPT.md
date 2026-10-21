@@ -37,6 +37,15 @@ Rules of engagement:
     git worktree remove --force Temp/reviews/pr-N when done
   Temp/ is gitignored scratch, so review worktrees live there and never
   block another PR's work.
+  Known ENV deltas in any fresh worktree, verify before classifying
+  anything as CODE: two suites fail outside the owner's checkout and the
+  same suites fail on a fresh origin/main worktree, so they are
+  pre-existing and unrelated to the branch. tests/server/src/config.test.js
+  asserts the repo folder is named Dr.Docs, which a worktree named pr-N is
+  not, and tests/utils/processors/router.test.js reads gitignored Docs/
+  fixtures that a clean worktree does not have, so its ocr case lands in
+  FILE_CORRUPTED. Run the same suites on an origin/main worktree once if
+  you need the comparison, then classify and move on.
 - A gate that times out is a finding, not a nuisance: name the cause.
 
 Work method:
@@ -74,11 +83,12 @@ Work method:
    double submit), and the repo's frozen contract: tests/contract pins
    every shipped operation's messages, error codes, defaults, output names
    and request shapes; any drift there is the top find of the round.
-3. TEST INTEGRITY. No pre-existing test weakened, skipped, conditioned
-   false, or deleted (git diff origin/main...origin/<branch> --numstat --
-   tests/ must show zero deletions in pre-existing files). New tests pin
-   observable behavior a user would recognize, not implementation trivia,
-   and stay additive.
+3. TEST INTEGRITY. No pre-existing test deleted. Every deletion hunk in
+   tests/ inside pre-existing files is read line by line and classified:
+   weakening (a loosened assertion, a skipped or conditioned-false case, a
+   deleted behavior pin) is the finding; benign churn from an approved
+   behavior change is not. New tests pin observable behavior a user would
+   recognize, not implementation trivia, and stay additive.
 4. MAINTAINABILITY. One source of truth per concept, no duplicated logic,
    no dead code, no unused imports, names the next reader understands, and
    the repo's own shape rules: utils/ stays framework-free; the client shut
