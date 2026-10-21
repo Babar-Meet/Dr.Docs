@@ -38,17 +38,17 @@ Rules of engagement:
   Temp/ is gitignored scratch, so review worktrees live there and never
   block another PR's work.
   Known ENV deltas in any fresh worktree, verify before classifying
-  anything as CODE: several suites fail outside the owner's checkout and
-  the same failures reproduce on a fresh origin/main worktree, so they
-  are pre-existing and unrelated to the branch. Three classes measured:
+  anything as CODE: suites may fail outside the owner's checkout and the
+  same failures reproduce on a fresh origin/main worktree, so they are
+  pre-existing and unrelated to the branch. Two classes measured:
   tests/server/src/config.test.js asserts the repo folder is named
-  Dr.Docs, which a worktree named pr-N is not; tests/utils/processors/
-  router.test.js reads gitignored Docs/ fixtures that a clean worktree
-  does not have, so its ocr case lands in FILE_CORRUPTED; and the
-  watermark and page-numbers processor suites fail with
-  "doc.destroy is not a function" in a worktree environment. Run the
-  same suites on an origin/main worktree once if you need the
-  comparison, then classify and move on.
+  Dr.Docs, which a worktree named pr-N is not, and tests/utils/
+  processors/router.test.js reads gitignored Docs/ fixtures that a clean
+  worktree does not have, so its ocr case lands in FILE_CORRUPTED. Other
+  swing classes have been measured here before (a pdfjs doc.destroy wave
+  in the watermark and page-numbers suites), so do not trust the count:
+  run the same suites on an origin/main worktree once if anything fails,
+  then classify and move on.
 - A gate that times out is a finding, not a nuisance: name the cause.
 
 Work method:
