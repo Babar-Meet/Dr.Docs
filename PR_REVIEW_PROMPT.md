@@ -38,14 +38,17 @@ Rules of engagement:
   Temp/ is gitignored scratch, so review worktrees live there and never
   block another PR's work.
   Known ENV deltas in any fresh worktree, verify before classifying
-  anything as CODE: two suites fail outside the owner's checkout and the
-  same suites fail on a fresh origin/main worktree, so they are
-  pre-existing and unrelated to the branch. tests/server/src/config.test.js
-  asserts the repo folder is named Dr.Docs, which a worktree named pr-N is
-  not, and tests/utils/processors/router.test.js reads gitignored Docs/
-  fixtures that a clean worktree does not have, so its ocr case lands in
-  FILE_CORRUPTED. Run the same suites on an origin/main worktree once if
-  you need the comparison, then classify and move on.
+  anything as CODE: suites may fail outside the owner's checkout and the
+  same failures reproduce on a fresh origin/main worktree, so they are
+  pre-existing and unrelated to the branch. Two classes measured:
+  tests/server/src/config.test.js asserts the repo folder is named
+  Dr.Docs, which a worktree named pr-N is not, and tests/utils/
+  processors/router.test.js reads gitignored Docs/ fixtures that a clean
+  worktree does not have, so its ocr case lands in FILE_CORRUPTED. Other
+  swing classes have been measured here before (a pdfjs doc.destroy wave
+  in the watermark and page-numbers suites), so do not trust the count:
+  run the same suites on an origin/main worktree once if anything fails,
+  then classify and move on.
 - A gate that times out is a finding, not a nuisance: name the cause.
 
 Work method:
@@ -141,6 +144,9 @@ Work method:
 ## Per-round fill-in (working agent completes, then sends everything)
 
 - REPO PATH, BRANCH, PR URL, commit list.
+- MODEL: which model made the change. The PR title and body both carry it
+  per AGENTS.md Git Workflow point 3, and a title or body that hides the
+  model is a finding.
 - GOAL: the outcome in the owner's own words, plus what "done" means here.
 - FROZEN ANGLE: which frozen rules this diff must not touch (byte-equal
   outputs, error shapes, defaults; for docs rounds, what the text must
