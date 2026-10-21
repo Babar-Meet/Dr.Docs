@@ -13,6 +13,7 @@ import {
   countLine,
   deleteEntries,
   duplicateEntries,
+  emptyArrangedReason,
   emptyOrderReason,
   moveEntry,
   orderString,
@@ -325,7 +326,7 @@ export default function OrganizeOptions({
 
       {parseResult.entries.length === 0 && (
         <p className="mt-3 rounded-[5px] bg-deep px-3 py-2 font-body text-xs text-muted">
-          {emptyOrderReason()}
+          {arranged ? emptyArrangedReason() : emptyOrderReason()}
         </p>
       )}
 

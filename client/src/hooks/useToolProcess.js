@@ -58,7 +58,7 @@ export default function useToolProcess(tool) {
   const [watermarkType, setWatermarkType] = useState("standard");
   const [pageNumberPosition, setPageNumberPosition] = useState("bottom-center");
   const [pageNumberMargin, setPageNumberMargin] = useState("24");
-  // Organize tool state: the frozen arrangePages wire string. The strip in
+  // Organize tool state: the frozen organizePages wire string. The strip in
   // OrganizeOptions edits it through lib/organizeOrder.js; an empty string
   // means nothing arranged yet, which the server refuses.
   const [organizeOrder, setOrganizeOrder] = useState("");

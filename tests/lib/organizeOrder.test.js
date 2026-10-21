@@ -5,6 +5,7 @@ import {
   countLine,
   deleteEntries,
   duplicateEntries,
+  emptyArrangedReason,
   entryReason,
   emptyOrderReason,
   moveEntry,
@@ -220,5 +221,18 @@ describe("countLine", () => {
     assert.equal(countLine(entries.length), "Output: 2 pages.");
     entries = duplicateEntries(entries, [0]);
     assert.equal(countLine(entries.length), "Output: 3 pages.");
+  });
+});
+
+describe("emptyArrangedReason", () => {
+  it("carries the arranged-empty bytes the strip shows when every page was deleted", () => {
+    assert.equal(
+      emptyArrangedReason(),
+      "An organize output must keep at least one page. Add a page back or reset the order.",
+    );
+  });
+
+  it("leaves the untouched empty refusal byte identical", () => {
+    assert.equal(emptyOrderReason(), CONDITION);
   });
 });

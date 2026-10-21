@@ -99,6 +99,14 @@ export function emptyOrderReason() {
   return "Choose how to arrange the pages before organizing.";
 }
 
+// A committed arrangement that ends with zero entries is a different state
+// from nothing arranged yet: the user deleted the last page now, so the
+// untouched "choose how" hint would read like nothing was done. This names
+// the rule instead: an organize output cannot be a zero-page file.
+export function emptyArrangedReason() {
+  return "An organize output must keep at least one page. Add a page back or reset the order.";
+}
+
 export function entryReason(token, pageCount) {
   return `Invalid page: ${token}. Use page numbers between 1 and ${pageCount}.`;
 }
