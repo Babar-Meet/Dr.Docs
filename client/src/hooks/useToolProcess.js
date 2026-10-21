@@ -58,6 +58,10 @@ export default function useToolProcess(tool) {
   const [watermarkType, setWatermarkType] = useState("standard");
   const [pageNumberPosition, setPageNumberPosition] = useState("bottom-center");
   const [pageNumberMargin, setPageNumberMargin] = useState("24");
+  // Organize tool state: the frozen arrangePages wire string. The strip in
+  // OrganizeOptions edits it through lib/organizeOrder.js; an empty string
+  // means nothing arranged yet, which the server refuses.
+  const [organizeOrder, setOrganizeOrder] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [status, setStatus] = useState(null);
   // Set on the first click of the post-run Download button. Downloads are
@@ -196,6 +200,7 @@ export default function useToolProcess(tool) {
     setResultDownloaded(false);
     setRotateAllDelta(0);
     setPageRotations({});
+    setOrganizeOrder("");
     setPassword("");
 
     // Thumbnails and page counts arrive asynchronously, one file at a time.
@@ -281,6 +286,7 @@ export default function useToolProcess(tool) {
     setInspections({});
     setStatus(null);
     setResultDownloaded(false);
+    setOrganizeOrder("");
     setPassword("");
   }
 
@@ -307,6 +313,7 @@ export default function useToolProcess(tool) {
       watermarkType,
       pageNumberPosition,
       pageNumberMargin,
+      organizeOrder,
     };
 
     const failureReason = validateToolState({
@@ -419,6 +426,8 @@ export default function useToolProcess(tool) {
     setPageNumberPosition,
     pageNumberMargin,
     setPageNumberMargin,
+    organizeOrder,
+    setOrganizeOrder,
     isProcessing,
     status,
     resultDownloaded,
@@ -433,7 +442,12 @@ export default function useToolProcess(tool) {
       !isProcessing &&
       requiredOptionMet({
         operation: tool.operation,
-        values: { password, watermarkText, rotateRunnable: isRotateRunnable() },
+        values: {
+          password,
+          watermarkText,
+          rotateRunnable: isRotateRunnable(),
+          organizeOrder,
+        },
       }),
     onPickFiles,
     onDrop,

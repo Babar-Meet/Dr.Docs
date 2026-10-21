@@ -15,7 +15,7 @@
 ### 2. File Processing Pipeline
 The processing flow is managed by a centralized router (`/utils/processors/router.js`) which:
 1. Validates the file extension and declared MIME type. Magic-byte signature checks for encryption happen later, inside the processors; XLSX is the exception, matched by ExcelJS error text instead of a header check.
-2. Identifies the requested mode (`unlock`, `convert`, `merge`, `split`, `ocr`, `rotate`, `compress`, `repair`), rejecting anything else with 400 `UNSUPPORTED_FILE`.
+2. Identifies the requested mode (`unlock`, `convert`, `merge`, `split`, `ocr`, `rotate`, `compress`, `repair`, `protect`, `watermark`, `pagenumbers`, `organize`), rejecting anything else with 400 `UNSUPPORTED_FILE`.
 3. Dispatches the task to the specific file processor (PDF, Office, Image, etc.).
 4. Returns one output descriptor per generated file.
 
@@ -55,7 +55,7 @@ After the router returns, `processService.processUploadedFile` deletes the uploa
 Main entry point for file processing.
 - **Content-Type**: `multipart/form-data`
 - **Files**: `files` (up to 200, the field the UI sends) or `file` (up to 10). Both field names are merged into one list, and `merge` needs two or more files in that list, not a particular field name. 50MB per file.
-- **Fields**: `operation`, default `unlock`, one of `unlock`, `convert`, `merge`, `split`, `ocr`, `rotate`, `compress`, `repair`. `targetFormat` is required for `convert` and selects the merge output format (`pdf` or `docx`). Also read: `pageRanges` (split), `rotationAngle` and `pages` (rotate). See `README.md` for the full request field list.
+- **Fields**: `operation`, default `unlock`, one of `unlock`, `convert`, `merge`, `split`, `ocr`, `rotate`, `compress`, `repair`, `protect`, `watermark`, `pagenumbers`, `organize`. `targetFormat` is required for `convert` and selects the merge output format (`pdf` or `docx`). Also read: `pageRanges` (split), `rotationAngle` and `pages` (rotate), `organizePages` (organize). See `README.md` for the full request field list.
 - **Returns**: `status`, `message`, `results[]` of `{downloadId, downloadName, downloadUrl, detectedType, message}`, `downloadId`/`downloadUrl` for the first result only, and `batchDownloadId`/`batchDownloadUrl` when more than one output was produced. Errors return `{status, message, reason, code}`.
 
 ### `GET /download/:id`

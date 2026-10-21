@@ -6,6 +6,7 @@ import ProtectOptions from "./ProtectOptions.jsx";
 import UnlockOptions from "./UnlockOptions.jsx";
 import WatermarkOptions from "./WatermarkOptions.jsx";
 import PageNumbersOptions from "./PageNumbersOptions.jsx";
+import OrganizeOptions from "./OrganizeOptions.jsx";
 
 // ToolRecord.kind is "info" for compress, ocr and repair; those tools
 // have no selectable options, so they render no panel here. Their per-engine
@@ -114,6 +115,17 @@ export default function OptionsPanel({
         pageNumberMargin={state.pageNumberMargin}
         setPageNumberMargin={state.setPageNumberMargin}
         file={state.selectedFiles[0]}
+      />
+    );
+  }
+
+  if (resolvedKind === "organize") {
+    return (
+      <OrganizeOptions
+        organizeOrder={state.organizeOrder}
+        setOrganizeOrder={state.setOrganizeOrder}
+        file={files[0] || null}
+        pdfPages={singlePdfPages}
       />
     );
   }

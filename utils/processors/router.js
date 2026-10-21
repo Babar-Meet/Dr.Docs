@@ -26,6 +26,7 @@ export async function processFile({
   watermarkType,
   pageNumberPosition,
   pageNumberMargin,
+  organizePages,
   inputFiles = [],
   outputBasePath,
   workDir,
@@ -62,6 +63,7 @@ export async function processFile({
       watermarkType,
       pageNumberPosition,
       pageNumberMargin,
+      organizePages,
     },
     files,
     runtime: {

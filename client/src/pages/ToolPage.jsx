@@ -40,6 +40,7 @@ function ToolRuntime({ tool }) {
     "unlock",
     "watermark",
     "pagenumbers",
+    "organize",
   ].includes(tool.operation);
   const hasResult = Boolean(state.resultDownloadUrl);
   // A fixed-target conversion (a named pair page) shows no options panel:
@@ -190,6 +191,9 @@ function ToolRuntime({ tool }) {
 const TOOL_NOTES = {
   compress: ["PDFs only. Batch up to 200 files. Encrypted files are never bypassed."],
   ocr: ["Uses Tesseract. English trained data is included (eng.traineddata)."],
+  organize: [
+    "Organizes one PDF: the order you set is the output page order. Encrypted files are never bypassed.",
+  ],
   repair: [
     "PDF: rebuilt and linearized with qpdf.",
     "DOCX, PPTX: package validated and rewritten.",

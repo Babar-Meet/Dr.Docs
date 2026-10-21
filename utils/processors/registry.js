@@ -38,6 +38,7 @@ import {
 import { mergePdfFiles, splitPdfByRanges } from "./mergeSplitProcessor.js";
 import { runOcrExtraction } from "./ocrProcessor.js";
 import { rotatePdfPages } from "./rotateProcessor.js";
+import { organizePdf } from "./organizeProcessor.js";
 import { watermarkPdf } from "./watermarkProcessor.js";
 import { pageNumberPdf } from "./pageNumbersProcessor.js";
 import {
@@ -654,6 +655,47 @@ async function runRotate({ options, files, runtime }) {
   };
 }
 
+// Single-PDF handlers: organize joins split, rotate and ocr. The rotate pair
+// above is the exact gate shape: one file, PDF only, one output descriptor.
+async function runOrganize({ options, files, runtime }) {
+  if (files.length !== 1) {
+    throw unsupportedFile("Organize requires exactly one PDF file.");
+  }
+
+  const file = files[0];
+  const fileType = detectFileType(file.originalName, file.mimeType);
+  if (!fileType || fileType.extension !== ".pdf") {
+    throw unsupportedFile("Organize supports PDF files only.");
+  }
+
+  const perFileBase = createPerFileOutputBase(
+    runtime.outputBasePath,
+    0,
+    file.originalName,
+  );
+  const outputPath = createOutputPath(perFileBase, ".pdf");
+  await organizePdf({
+    inputPath: file.path,
+    outputPath,
+    organizePages: options.organizePages,
+  });
+  await ensureOutputExists(outputPath);
+
+  return {
+    message: "Organized 1 PDF(s).",
+    outputs: [
+      createDescriptor({
+        outputPath,
+        outputExtension: ".pdf",
+        sourceName: file.originalName,
+        outputName: `${sanitizeBaseName(path.parse(file.originalName).name)}_organized.pdf`,
+        detectedType: "PDF",
+        message: "PDF organized successfully.",
+      }),
+    ],
+  };
+}
+
 async function runOcr({ files, runtime }) {
   const outputs = [];
   for (let index = 0; index < files.length; index += 1) {
@@ -709,4 +751,5 @@ export const OPERATION_HANDLERS = {
   protect: runProtect,
   watermark: runWatermark,
   pagenumbers: runPageNumbers,
+  organize: runOrganize,
 };
