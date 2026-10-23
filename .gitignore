@@ -15,3 +15,4 @@ Thumbs.db
 *.log
 eng.traineddata
 server/eng.traineddata
+package-lock.json
