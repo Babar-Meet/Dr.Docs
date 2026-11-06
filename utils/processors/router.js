@@ -27,6 +27,7 @@ export async function processFile({
   pageNumberPosition,
   pageNumberMargin,
   organizePages,
+  compressionLevel,
   inputFiles = [],
   outputBasePath,
   workDir,
@@ -64,6 +65,7 @@ export async function processFile({
       pageNumberPosition,
       pageNumberMargin,
       organizePages,
+      compressionLevel,
     },
     files,
     runtime: {

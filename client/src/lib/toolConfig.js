@@ -128,9 +128,9 @@ export const TOOLS = [
     icon: LayoutGrid,
     available: true,
     operation: "organize",
-    help: "Reorder, duplicate, and remove pages of one PDF",
+    help: "Reorder, rotate, duplicate, and remove pages of one PDF",
     detail:
-      "Organize rearranges one PDF into a second PDF: drag the page thumbnails into the order you want, duplicate a page to keep it twice, and remove the pages you do not. The strip always shows the output you will get. Encrypted inputs are never bypassed and keep failing with Password required.",
+      "Organize rearranges one PDF into a second PDF: drag the page thumbnails into the order you want, turn a page with the rotate button on its tile, duplicate a page to keep it twice, and remove the pages you do not. Rotations stay with their page through a move, a duplicate, or a delete. The strip always shows the output you will get. Encrypted inputs are never bypassed and keep failing with Password required.",
     kind: "info",
     sourceExtensions: [".pdf"],
     targetFormat: null,
@@ -161,9 +161,9 @@ export const TOOLS = [
     icon: Minimize2,
     available: true,
     operation: "compress",
-    help: "Lossless optimize - shrink without quality loss",
+    help: "Shrink PDFs, lossless by default",
     detail:
-      "Optimize (lossless): linearizes, dedupes, compresses streams via qpdf. Output size depends on the source file. Encrypted never bypassed.",
+      "Compress reduces PDF size with qpdf. Lossless is the default: it linearizes the file and compresses its streams, with no change to text or images. Recommended, Extreme, and Light also re-encode embedded JPEG images at a lower resolution and quality to save more space, and keep the original file when the result is not smaller. Output size depends on the source file. Encrypted files are never bypassed.",
     kind: "info",
     sourceExtensions: [".pdf"],
     targetFormat: null,

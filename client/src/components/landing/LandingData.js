@@ -94,7 +94,7 @@ const SECTION_ORDER = [
 export const TOOL_SENTENCES = {
   "merge-pdf": "Combine PDF, Office, and image files into one document.",
   "split-pdf": "Split one PDF into several files by page range.",
-  "compress-pdf": "Shrink PDF file size without quality loss.",
+  "compress-pdf": "Shrink PDFs losslessly, or re-encode images for a smaller file.",
   "pdf-to-word": "Convert a PDF into an editable Word file.",
   "pdf-to-powerpoint": "Convert a PDF into a PowerPoint file.",
   "pdf-to-excel": "Convert a PDF into an Excel file.",
@@ -111,7 +111,7 @@ export const TOOL_SENTENCES = {
   "rotate-pdf": "Rotate all pages or turn pages live, one at a time.",
   "unlock-pdf": "Remove restrictions, or open a locked PDF with its password.",
   "protect-pdf": "Add a password with 256-bit AES encryption.",
-  "organize-pdf": "Reorder, duplicate, or remove pages of one PDF.",
+  "organize-pdf": "Reorder, rotate, duplicate, or remove pages of one PDF.",
   "pdf-to-pdfa": "Not built yet: rewrite a PDF into the PDF/A archive format.",
   "repair-pdf": "Rebuild a damaged file and keep its original format.",
   "add-page-numbers": "Stamp 1, 2, 3 in nine positions.",

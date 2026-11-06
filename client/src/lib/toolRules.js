@@ -183,14 +183,29 @@ export function buildRequestOptionValues({ operation, state }) {
         pageNumberMargin: state.pageNumberMargin,
       };
 
-    case "organize":
-      return {
-        ...EMPTY_OPTION_VALUES,
-        organizePages: state.organizeOrder.trim(),
-      };
+    case "organize": {
+      const rot = (state.organizeRotations || "").trim();
+      return rot
+        ? {
+            ...EMPTY_OPTION_VALUES,
+            organizePages: state.organizeOrder.trim(),
+            rotations: rot,
+          }
+        : {
+            ...EMPTY_OPTION_VALUES,
+            organizePages: state.organizeOrder.trim(),
+          };
+    }
+
+    case "compress": {
+      const level = (state.compressionLevel || "").trim();
+      return level && level !== "lossless"
+        ? { ...EMPTY_OPTION_VALUES, compressionLevel: level }
+        : { ...EMPTY_OPTION_VALUES };
+    }
 
     default:
-      // compress, ocr, repair: files only, no option fields on the wire.
+      // ocr, repair: files only, no option fields on the wire.
       return { ...EMPTY_OPTION_VALUES };
   }
 }
@@ -222,7 +237,11 @@ const FIELDS = {
     { name: "pageNumberPosition", mode: "always" },
     { name: "pageNumberMargin", mode: "always" },
   ],
-  organize: [{ name: "organizePages", mode: "always" }],
+  organize: [
+    { name: "organizePages", mode: "always" },
+    { name: "rotations", mode: "truthy" },
+  ],
+  compress: [{ name: "compressionLevel", mode: "truthy" }],
 };
 
 // Adds the operation's wire fields to FormData in the frozen order. A value
