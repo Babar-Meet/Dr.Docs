@@ -111,6 +111,50 @@ export function entryReason(token, pageCount) {
   return `Invalid page: ${token}. Use page numbers between 1 and ${pageCount}.`;
 }
 
+// One quarter turn on the tile at a strip position. Presses accumulate, and a
+// full turn removes the entry, so the map only ever holds 90, 180, or 270.
+export function rotateEntry(rotations, index, delta = 90) {
+  const current = (rotations && rotations[index]) || 0;
+  const next = (current + delta) % 360;
+  const copy = { ...(rotations || {}) };
+  if (next === 0) {
+    delete copy[index];
+  } else {
+    copy[index] = next;
+  }
+  return copy;
+}
+
+// The rotation map back to the frozen wire string: 1-based output positions in
+// ascending order, as in "3:90,5:180". An empty map is "".
+export function serializeRotations(rotations) {
+  if (!rotations || typeof rotations !== "object") return "";
+  const entries = Object.entries(rotations)
+    .map(([idx, deg]) => [Number.parseInt(idx, 10), deg])
+    .filter(([idx, deg]) => !Number.isNaN(idx) && [90, 180, 270].includes(deg))
+    .sort((a, b) => a[0] - b[0]);
+  if (entries.length === 0) return "";
+  return entries.map(([idx, deg]) => `${idx + 1}:${deg}`).join(",");
+}
+
+// Carries the rotation map through an order change. sourceIndices is the new
+// arrangement written as old positions: sourceIndices[newIndex] = oldIndex.
+// Each rotation moves to the position its tile moved to, a position with no
+// source rotation stays empty, and a position that no longer exists is
+// dropped. Returns a new object and never mutates the input.
+export function remapRotations(rotations, sourceIndices) {
+  const source = rotations && typeof rotations === "object" ? rotations : {};
+  const positions = Array.isArray(sourceIndices) ? sourceIndices : [];
+  const next = {};
+  positions.forEach((oldIndex, newIndex) => {
+    const angle = source[oldIndex];
+    if ([90, 180, 270].includes(angle)) {
+      next[newIndex] = angle;
+    }
+  });
+  return next;
+}
+
 // The live count line under the strip. It names output pages: after a
 // duplicate or a delete the number moves with the arrangement, not the file.
 export function countLine(count) {

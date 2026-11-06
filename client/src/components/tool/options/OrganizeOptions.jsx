@@ -5,6 +5,7 @@ import {
   Copy,
   LayoutGrid,
   RotateCcw,
+  RotateCw,
   Trash2,
 } from "lucide-react";
 import Panel from "../../ui/Panel.jsx";
@@ -18,7 +19,10 @@ import {
   moveEntry,
   orderString,
   parseOrder,
+  remapRotations,
   resetEntries,
+  rotateEntry,
+  serializeRotations,
 } from "../../../lib/organizeOrder";
 
 // The page tiles render at the split preview width, from the same lazy pdf.js
@@ -32,6 +36,8 @@ const PREVIEW_WIDTH = 155;
 function OrganizeTile({
   page,
   thumbnail,
+  rotation = 0,
+  onRotate,
   selected,
   dragOver,
   onSelect,
@@ -41,17 +47,30 @@ function OrganizeTile({
   onDragEnd,
 }) {
   const shell =
-    "relative w-[172px] rounded-[6px] border p-2 text-left transition " +
+    "relative w-[172px] select-none rounded-[6px] border p-2 text-left transition " +
     (selected
       ? "border-orange bg-successBg/40"
       : dragOver
         ? "border-orange bg-deep"
         : "border-borderStrong bg-deep hover:bg-elevated");
 
+  // The tile is a container, not a button: the rotate control inside it is a
+  // real button, and a button may not contain another button. Enter and Space
+  // select the tile, which a div does not do on its own. Keys pressed on the
+  // rotate button stay with that button.
+  const handleKeyDown = (event) => {
+    if (event.target !== event.currentTarget) return;
+    if (event.key !== "Enter" && event.key !== " ") return;
+    event.preventDefault();
+    onSelect();
+  };
+
   return (
-    <button
-      type="button"
+    <div
+      role="button"
+      tabIndex={0}
       draggable
+      onKeyDown={handleKeyDown}
       onDragStart={onDragStart}
       onDragOver={onDragOver}
       onDrop={onDrop}
@@ -63,11 +82,24 @@ function OrganizeTile({
           : `Page ${page}. Click to select, drag to move.`
       }
       aria-label={selected ? `Deselect page ${page}` : `Select page ${page}`}
+      aria-pressed={selected}
       className={shell}
     >
       <span className="absolute left-2 top-1.5 font-mono text-[10px] font-bold text-muted">
         {page}
       </span>
+      <button
+        type="button"
+        onClick={(event) => {
+          event.stopPropagation();
+          if (onRotate) onRotate();
+        }}
+        title={`Rotate page ${page} 90 degrees clockwise`}
+        aria-label={`Rotate page ${page}`}
+        className="absolute right-1.5 top-1.5 z-10 rounded-[3px] p-1 text-muted transition hover:bg-elevated hover:text-content"
+      >
+        <RotateCw className="h-3 w-3" />
+      </button>
 
       <div className="flex h-[150px] items-center justify-center overflow-hidden">
         {thumbnail ? (
@@ -75,14 +107,27 @@ function OrganizeTile({
             src={thumbnail}
             alt={`Page ${page}`}
             draggable={false}
-            className="max-h-full max-w-full"
+            style={{ transform: rotation ? `rotate(${rotation}deg)` : undefined }}
+            className="max-h-full max-w-full transition-transform duration-200"
           />
         ) : (
-          <div className="flex h-full w-28 items-center justify-center rounded-[5px] bg-elevated font-mono text-[13px] text-muted">
+          <div
+            style={{ transform: rotation ? `rotate(${rotation}deg)` : undefined }}
+            className="flex h-full w-28 items-center justify-center rounded-[5px] bg-elevated font-mono text-[13px] text-muted transition-transform duration-200"
+          >
             {page}
           </div>
         )}
       </div>
+
+      {rotation ? (
+        <span
+          title={`Rotated ${rotation} degrees`}
+          className="absolute bottom-1 right-1.5 rounded-[3px] bg-orange/10 px-1 py-[1px] font-mono text-[9px] font-bold leading-none text-orange"
+        >
+          {rotation} deg
+        </span>
+      ) : null}
 
       {/* Fixed badge slot: selected tiles carry the label, the rest keep the
           slot empty so heights never jump. */}
@@ -94,7 +139,7 @@ function OrganizeTile({
       >
         {selected ? "Selected" : "placeholder"}
       </p>
-    </button>
+    </div>
   );
 }
 
@@ -117,6 +162,8 @@ function ToolbarButton({ icon: Icon, label, disabled, onClick }) {
 export default function OrganizeOptions({
   organizeOrder,
   setOrganizeOrder,
+  organizeRotations = "",
+  setOrganizeRotations,
   file,
   pdfPages,
 }) {
@@ -128,6 +175,7 @@ export default function OrganizeOptions({
   // both are an empty organizePages string on the wire, and the server
   // refuses both with the hint.
   const [arranged, setArranged] = useState(false);
+  const [rotationsMap, setRotationsMap] = useState({});
   const [selectedIndices, setSelectedIndices] = useState(new Set());
   const [dragOverIndex, setDragOverIndex] = useState(-1);
   const loadedFileRef = useRef(null);
@@ -146,6 +194,8 @@ export default function OrganizeOptions({
     setPreviewComplete(false);
     setArranged(false);
     setSelectedIndices(new Set());
+    setRotationsMap({});
+    if (setOrganizeRotations) setOrganizeRotations("");
     let cancelled = false;
 
     renderPdfThumbnails(file, {
@@ -197,6 +247,23 @@ export default function OrganizeOptions({
     setArranged(true);
   };
 
+  // Applies an order change and carries every rotation with its tile. The same
+  // transform runs over the old strip positions, which is exactly the
+  // newIndex -> oldIndex table remapRotations expects, so a rotation stays on
+  // the tile it was set on through a move, a duplicate, or a delete.
+  const commitOrder = (transform) => {
+    const next = transform(entries);
+    if (next === entries) return false;
+    write(next);
+    const nextRotations = remapRotations(
+      rotationsMap,
+      transform(entries.map((_, index) => index)),
+    );
+    setRotationsMap(nextRotations);
+    if (setOrganizeRotations) setOrganizeRotations(serializeRotations(nextRotations));
+    return true;
+  };
+
   const toggleSelect = (index) => {
     setSelectedIndices((current) => {
       const next = new Set(current);
@@ -220,24 +287,45 @@ export default function OrganizeOptions({
   const canMoveLeft = onlySelected > 0;
   const canMoveRight = onlySelected !== -1 && onlySelected < entries.length - 1;
   const canReset = pdfPages !== null;
+  const canRotate = selectedPositions.length > 0;
+
+  const rotateTile = (index) => {
+    if (!arranged) {
+      write(entries);
+    }
+    const nextMap = rotateEntry(rotationsMap, index, 90);
+    setRotationsMap(nextMap);
+    if (setOrganizeRotations) setOrganizeRotations(serializeRotations(nextMap));
+  };
+
+  const rotateSelected = () => {
+    if (!arranged) {
+      write(entries);
+    }
+    let nextMap = { ...rotationsMap };
+    for (const index of selectedPositions) {
+      nextMap = rotateEntry(nextMap, index, 90);
+    }
+    setRotationsMap(nextMap);
+    if (setOrganizeRotations) setOrganizeRotations(serializeRotations(nextMap));
+  };
 
   const deleteSelected = () => {
     if (!canDelete) return;
-    write(deleteEntries(entries, selectedPositions));
+    commitOrder((list) => deleteEntries(list, selectedPositions));
     setSelectedIndices(new Set());
   };
 
   const duplicateSelected = () => {
     if (!canDuplicate) return;
-    write(duplicateEntries(entries, selectedPositions));
+    commitOrder((list) => duplicateEntries(list, selectedPositions));
     setSelectedIndices(new Set());
   };
 
   const moveSelected = (delta) => {
     if (onlySelected === -1) return;
-    const next = moveEntry(entries, onlySelected, delta);
-    if (next === entries) return;
-    write(next);
+    const moved = commitOrder((list) => moveEntry(list, onlySelected, delta));
+    if (!moved) return;
     setSelectedIndices(new Set([onlySelected + delta]));
   };
 
@@ -245,6 +333,8 @@ export default function OrganizeOptions({
     if (!canReset) return;
     write(resetEntries(pdfPages));
     setSelectedIndices(new Set());
+    setRotationsMap({});
+    if (setOrganizeRotations) setOrganizeRotations("");
   };
 
   // Native drag and drop: the drop lands the dragged tile at the hovered
@@ -267,9 +357,8 @@ export default function OrganizeOptions({
     dragIndexRef.current = null;
     setDragOverIndex(-1);
     if (from === null || from === index) return;
-    const next = moveEntry(entries, from, index - from);
-    if (next === entries) return;
-    write(next);
+    const moved = commitOrder((list) => moveEntry(list, from, index - from));
+    if (!moved) return;
     setSelectedIndices(new Set());
   };
 
@@ -292,6 +381,12 @@ export default function OrganizeOptions({
       </div>
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
+        <ToolbarButton
+          icon={RotateCw}
+          label="Rotate 90"
+          disabled={!canRotate}
+          onClick={rotateSelected}
+        />
         <ToolbarButton
           icon={Trash2}
           label="Delete pages"
@@ -318,7 +413,7 @@ export default function OrganizeOptions({
         />
         <ToolbarButton
           icon={RotateCcw}
-          label="Reset order"
+          label="Reset all"
           disabled={!canReset}
           onClick={resetOrder}
         />
@@ -358,6 +453,8 @@ export default function OrganizeOptions({
                   key={index}
                   page={page}
                   thumbnail={thumbByPage.get(page) || ""}
+                  rotation={rotationsMap[index] || 0}
+                  onRotate={() => rotateTile(index)}
                   selected={selectedIndices.has(index)}
                   dragOver={dragOverIndex === index}
                   onSelect={() => toggleSelect(index)}

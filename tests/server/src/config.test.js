@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import path from "node:path";
 import os from "node:os";
 import fs from "fs-extra";
+import { spawnSync } from "node:child_process";
 import {
   REPO_ROOT,
   VENDOR_BIN_DIR,
@@ -82,5 +83,30 @@ describe("external binary resolution (env var, vendor/bin, PATH)", () => {
     } else {
       assert.equal(LIBREOFFICE_BIN, "soffice", "no vendor bin means the PATH default stays");
     }
+  });
+
+  it("the download TTL and sweep interval ignore environment overrides", () => {
+    // The frozen values are constants. A fresh child process proves an env var
+    // cannot change them, without touching this process's module cache or env.
+    const configUrl = new URL("../../../server/src/config.js", import.meta.url).href;
+    const script = `import(${JSON.stringify(configUrl)}).then((m) => process.stdout.write(JSON.stringify({ ttl: m.DOWNLOAD_TTL_MS, cleanup: m.CLEANUP_INTERVAL_MS })));`;
+    const child = spawnSync(process.execPath, ["--input-type=module", "-e", script], {
+      encoding: "utf8",
+      timeout: 60000,
+      cwd: REPO_ROOT,
+      env: {
+        ...process.env,
+        DOWNLOAD_TTL_MS: "1",
+        CLEANUP_INTERVAL_MS: "2",
+        DRDOCS_DOWNLOAD_TTL_MS: "3",
+        DRDOCS_CLEANUP_INTERVAL_MS: "4",
+      },
+    });
+
+    assert.equal(child.status, 0, child.stderr);
+    assert.deepEqual(JSON.parse(child.stdout), {
+      ttl: 30 * 60 * 1000,
+      cleanup: 5 * 60 * 1000,
+    });
   });
 });

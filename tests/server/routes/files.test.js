@@ -170,6 +170,9 @@ describe("routes/files validation POST /process", () => {
       assert.equal(body.status, "success");
       assert.ok(body.results.length >= 1);
       assert.match(body.results[0].downloadName, /_protected\.pdf$/);
+      // Regression for the perFileMessage refactor: callers that pass a plain
+      // string must keep emitting exactly the same per-file message.
+      assert.equal(body.results[0].message, "PDF password protected successfully.");
 
       const download = await fetch(`${baseUrl}${body.results[0].downloadUrl}`);
       assert.equal(download.status, 200);
@@ -245,6 +248,144 @@ describe("routes/files validation POST /process", () => {
       assert.equal(status, 400);
       assert.equal(body.code, "UNSUPPORTED_FILE");
       assert.equal(body.reason, "Choose how to arrange the pages before organizing.");
+    });
+
+    it("applies rotations to output positions, not source page numbers", async () => {
+      // Output order 2,1 puts the 300x300 page first. Rotation position 1
+      // must turn that first output page, whatever source page it came from.
+      const { status, body } = await postProcess({
+        fields: { operation: "organize", organizePages: "2,1", rotations: "1:90" },
+        files: [{ fieldName: "files", filePath: pdfPath, fileName: "organize-rotated.pdf", mimeType: "application/pdf" }],
+      });
+      assert.equal(status, 200);
+      assert.equal(body.status, "success");
+      assert.equal(body.message, "Organized 1 PDF(s).");
+      assert.equal(body.results[0].message, "PDF organized successfully.");
+
+      const download = await fetch(`${baseUrl}${body.results[0].downloadUrl}`);
+      assert.equal(download.status, 200);
+      const { PDFDocument } = await import("pdf-lib");
+      const out = await PDFDocument.load(Buffer.from(await download.arrayBuffer()));
+      assert.equal(out.getPageCount(), 2);
+      assert.deepEqual(
+        out.getPages().map((page) => page.getWidth()),
+        [300, 200],
+      );
+      assert.deepEqual(
+        out.getPages().map((page) => ((page.getRotation().angle % 360) + 360) % 360),
+        [90, 0],
+      );
+    });
+
+    it("returns 400 UNSUPPORTED_FILE for rotations it cannot apply", async () => {
+      for (const rotations of ["3:90", "1:45", "one:90", "1:90,1:180"]) {
+        const { status, body } = await postProcess({
+          fields: { operation: "organize", organizePages: "1,2", rotations },
+          files: [{ fieldName: "files", filePath: pdfPath, fileName: "organize-bad-rot.pdf", mimeType: "application/pdf" }],
+        });
+        assert.equal(status, 400, rotations);
+        assert.equal(body.code, "UNSUPPORTED_FILE", rotations);
+        assert.equal(body.status, "failed", rotations);
+      }
+    });
+
+    it("keeps the no-rotations organize output unchanged", async () => {
+      const { status, body } = await postProcess({
+        fields: { operation: "organize", organizePages: "2,1" },
+        files: [{ fieldName: "files", filePath: pdfPath, fileName: "organize-plain.pdf", mimeType: "application/pdf" }],
+      });
+      assert.equal(status, 200);
+      const download = await fetch(`${baseUrl}${body.results[0].downloadUrl}`);
+      const { PDFDocument } = await import("pdf-lib");
+      const out = await PDFDocument.load(Buffer.from(await download.arrayBuffer()));
+      assert.deepEqual(
+        out.getPages().map((page) => page.getRotation().angle),
+        [0, 0],
+      );
+    });
+  });
+
+  describe("compress operation end to end", () => {
+    let pdfPath;
+    let imagePdfPath;
+    before(async () => {
+      const { PDFDocument } = await import("pdf-lib");
+      const doc = await PDFDocument.create();
+      doc.addPage([200, 250]);
+      doc.addPage([210, 260]);
+      pdfPath = path.join(TMP_ROOT, "compress-roundtrip.pdf");
+      await fs.writeFile(pdfPath, await doc.save());
+
+      // Image-heavy input so every lossy level has something to remove and a
+      // kept-original result cannot mask a lost level field.
+      const sharp = (await import("sharp")).default;
+      const width = 900;
+      const height = 600;
+      const pixels = Buffer.alloc(width * height * 3);
+      let offset = 0;
+      for (let y = 0; y < height; y += 1) {
+        for (let x = 0; x < width; x += 1) {
+          pixels[offset] = (x * 7 + y * 13) % 256;
+          pixels[offset + 1] = (x * 3 + y * 5) % 256;
+          pixels[offset + 2] = (x + y) % 256;
+          offset += 3;
+        }
+      }
+      const jpeg = await sharp(pixels, { raw: { width, height, channels: 3 } })
+        .jpeg({ quality: 95 })
+        .toBuffer();
+      const imageDoc = await PDFDocument.create();
+      const embedded = await imageDoc.embedJpg(jpeg);
+      const page = imageDoc.addPage([width, height]);
+      page.drawImage(embedded, { x: 0, y: 0, width, height });
+      imagePdfPath = path.join(TMP_ROOT, "compress-photo.pdf");
+      await fs.writeFile(imagePdfPath, await imageDoc.save());
+    });
+
+    it("returns the frozen lossless messages when no level is sent", async () => {
+      const { status, body } = await postProcess({
+        fields: { operation: "compress" },
+        files: [{ fieldName: "files", filePath: pdfPath, fileName: "compress-me.pdf", mimeType: "application/pdf" }],
+      });
+      assert.equal(status, 200);
+      assert.equal(body.status, "success");
+      assert.equal(body.message, "Compressed 1 PDF(s) (lossless optimize).");
+      assert.equal(body.results.length, 1);
+      assert.equal(body.results[0].message, "PDF optimized (lossless) successfully.");
+      assert.equal(body.results[0].downloadName, "compress-me_compressed.pdf");
+
+      const download = await fetch(`${baseUrl}${body.results[0].downloadUrl}`);
+      assert.equal(download.status, 200);
+      const { PDFDocument } = await import("pdf-lib");
+      const out = await PDFDocument.load(Buffer.from(await download.arrayBuffer()));
+      assert.equal(out.getPageCount(), 2);
+    });
+
+    for (const level of ["recommended", "extreme", "low"]) {
+      const label = level === "low" ? "Light" : level[0].toUpperCase() + level.slice(1);
+      it(`forwards compressionLevel "${level}" to the processor`, async () => {
+        const { status, body } = await postProcess({
+          fields: { operation: "compress", compressionLevel: level },
+          files: [{ fieldName: "files", filePath: imagePdfPath, fileName: "compress-level.pdf", mimeType: "application/pdf" }],
+        });
+        assert.equal(status, 200);
+        assert.equal(body.message, `Compressed 1 PDF(s) (${label} compression).`);
+        assert.equal(body.results[0].message, `PDF optimized (${label}) successfully.`);
+      });
+    }
+
+    it("returns 400 UNSUPPORTED_FILE with the frozen reason for an unknown level", async () => {
+      const { status, body } = await postProcess({
+        fields: { operation: "compress", compressionLevel: "bogus" },
+        files: [{ fieldName: "files", filePath: pdfPath, fileName: "compress-bogus.pdf", mimeType: "application/pdf" }],
+      });
+      assert.equal(status, 400);
+      assert.equal(body.status, "failed");
+      assert.equal(body.code, "UNSUPPORTED_FILE");
+      assert.equal(
+        body.reason,
+        "Unsupported compression level: bogus. Use lossless, recommended, extreme, or low.",
+      );
     });
   });
 

@@ -33,6 +33,9 @@ router.post("/process", processUploadMiddleware, async (req, res, next) => {
     const pageNumberPosition = req.body.pageNumberPosition || "bottom-center";
     const pageNumberMargin = req.body.pageNumberMargin || "24";
     const organizePages = req.body.organizePages || "";
+    const compressionLevel = String(
+      req.body.compressionLevel ?? "lossless",
+    ).toLowerCase();
 
     const groupedFiles = req.files || {};
     const inputFiles = [
@@ -58,6 +61,7 @@ router.post("/process", processUploadMiddleware, async (req, res, next) => {
         pageNumberPosition,
         pageNumberMargin,
         organizePages,
+        compressionLevel,
         inputFiles,
       }),
     );

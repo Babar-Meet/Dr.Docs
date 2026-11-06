@@ -63,3 +63,15 @@ export const OPERATION_MODES = new Set([
   "pagenumbers",
   "organize",
 ]);
+
+export const COMPRESSION_LEVELS = ["lossless", "recommended", "extreme", "low"];
+
+// The label the user sees on the level button. Messages name the level the way
+// the UI does, so "low" never leaks into a sentence next to a button that says
+// Light.
+export const COMPRESSION_LEVEL_LABELS = {
+  lossless: "Lossless",
+  recommended: "Recommended",
+  extreme: "Extreme",
+  low: "Light",
+};

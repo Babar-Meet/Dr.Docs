@@ -31,6 +31,7 @@ import {
 } from "./conversionProcessor.js";
 import {
   compressPdf,
+  normalizeCompressionLevel,
   protectPdf,
   repairPdf,
   unlockPdfRestrictions,
@@ -54,6 +55,7 @@ import {
   isValidConversion,
   normalizeTargetFormat,
 } from "../helpers/fileType.js";
+import { COMPRESSION_LEVEL_LABELS } from "../constants.js";
 
 // ---------------------------------------------------------------------------
 // Handlers for the operations that keep the input's own type (unlock, repair)
@@ -456,7 +458,9 @@ async function runMerge({ options, files, runtime }) {
 
 // One shared loop for the four operations that take any number of PDFs and
 // write exactly one transformed PDF per input. The per-operation config is
-// fixed data by design: suffix and messages are frozen behavior.
+// fixed data by design: suffix and messages are frozen behavior. A
+// perFileMessage may be a function of (result, file) when the message depends
+// on what the processor did, as compress does for a kept original.
 async function runPerPdfFiles({
   files,
   options,
@@ -468,6 +472,7 @@ async function runPerPdfFiles({
   invokeProcessor,
 }) {
   const outputs = [];
+  const results = [];
   for (let index = 0; index < files.length; index += 1) {
     const file = files[index];
     const fileType = detectFileType(file.originalName, file.mimeType);
@@ -480,9 +485,19 @@ async function runPerPdfFiles({
       file.originalName,
     );
     const outputPath = createOutputPath(perFileBase, ".pdf");
-    await invokeProcessor({ inputPath: file.path, outputPath, options, runtime });
+    const result = await invokeProcessor({
+      inputPath: file.path,
+      outputPath,
+      options,
+      runtime,
+    });
+    results.push(result);
     await ensureOutputExists(outputPath);
     const base = sanitizeBaseName(path.parse(file.originalName).name);
+    const message =
+      typeof perFileMessage === "function"
+        ? perFileMessage(result, file)
+        : perFileMessage;
     outputs.push(
       createDescriptor({
         outputPath,
@@ -490,26 +505,58 @@ async function runPerPdfFiles({
         sourceName: file.originalName,
         outputName: `${base}${outputSuffix}`,
         detectedType: "PDF",
-        message: perFileMessage,
+        message,
       }),
     );
   }
   return {
-    message: summary(outputs.length),
+    message: typeof summary === "function" ? summary(outputs.length, results) : summary,
     outputs,
   };
 }
 
 async function runCompress({ options, files, runtime }) {
+  // The processor validates the level before it reads a file, so the message
+  // callbacks below only run after a successful pass and cannot throw.
+  const level = () => normalizeCompressionLevel(options.compressionLevel);
   return runPerPdfFiles({
     files,
     runtime,
     onlyPdfMessage: "Compress supports PDF files only.",
     outputSuffix: "_compressed.pdf",
-    perFileMessage: "PDF optimized (lossless) successfully.",
-    summary: (count) => `Compressed ${count} PDF(s) (lossless optimize).`,
+    perFileMessage: (result) => {
+      const compressionLevel = level();
+      if (compressionLevel === "lossless") {
+        return "PDF optimized (lossless) successfully.";
+      }
+      const label = COMPRESSION_LEVEL_LABELS[compressionLevel];
+      if (result?.keptOriginal) {
+        return `PDF already optimized; original kept (${label}).`;
+      }
+      return `PDF optimized (${label}) successfully.`;
+    },
+    summary: (count, results) => {
+      const compressionLevel = level();
+      if (compressionLevel === "lossless") {
+        return `Compressed ${count} PDF(s) (lossless optimize).`;
+      }
+      const label = COMPRESSION_LEVEL_LABELS[compressionLevel];
+      const kept = results.filter((result) => result?.keptOriginal).length;
+      if (kept === count) {
+        return `No smaller result for ${count} PDF(s); original kept.`;
+      }
+      if (kept > 0) {
+        return `Compressed ${count - kept} of ${count} PDF(s) (${label} compression); ${kept} kept original.`;
+      }
+      return `Compressed ${count} PDF(s) (${label} compression).`;
+    },
     invokeProcessor: async ({ inputPath, outputPath }) =>
-      compressPdf({ inputPath, outputPath, qpdfBin: runtime.qpdfBin }),
+      compressPdf({
+        inputPath,
+        outputPath,
+        qpdfBin: runtime.qpdfBin,
+        compressionLevel: options.compressionLevel,
+      }),
   });
 }
 
@@ -678,6 +725,7 @@ async function runOrganize({ options, files, runtime }) {
     inputPath: file.path,
     outputPath,
     organizePages: options.organizePages,
+    rotations: options.rotations,
   });
   await ensureOutputExists(outputPath);
 
