@@ -9,9 +9,10 @@
 
 import path from "node:path";
 import fs from "fs-extra";
-import { PDFDocument } from "pdf-lib";
+import { PDFDocument, degrees } from "pdf-lib";
 import { AppError } from "../errors.js";
 import { SECURE_ENCRYPTION_MESSAGE } from "../constants.js";
+import { parsePageRotations } from "../helpers/pageRotations.js";
 
 function toReason(error) {
   return error?.message || "Unknown PDF processing error";
@@ -93,7 +94,24 @@ async function loadPdfFromPath(inputPath) {
   }
 }
 
-export async function organizePdf({ inputPath, outputPath, organizePages }) {
+// The organize field names positions in the output order, and the same strict
+// rule as rotate applies to it: a bad token, a position past the output page
+// count, an unsupported angle or a duplicate position refuses the request
+// with UNSUPPORTED_FILE 400. The shared helper owns that rule, so the two
+// tools cannot drift apart. The result is keyed by zero-based output index and
+// an absent field is an empty object, which leaves every page as it was.
+export function parseOrganizeRotations(rotationsRaw, outputPageCount) {
+  const byPosition = parsePageRotations(rotationsRaw, outputPageCount);
+  if (!byPosition) return {};
+
+  const rotationsByIndex = {};
+  for (const [position, angle] of byPosition) {
+    rotationsByIndex[position - 1] = angle;
+  }
+  return rotationsByIndex;
+}
+
+export async function organizePdf({ inputPath, outputPath, organizePages, rotations }) {
   const pdfDoc = await loadPdfFromPath(inputPath);
   const pageCount = pdfDoc.getPageCount();
 
@@ -111,7 +129,14 @@ export async function organizePdf({ inputPath, outputPath, organizePages }) {
   const outputDoc = await PDFDocument.create();
   const indices = order.map((page) => page - 1);
   const copiedPages = await outputDoc.copyPages(pdfDoc, indices);
-  for (const page of copiedPages) {
+  const rotationMap = parseOrganizeRotations(rotations, copiedPages.length);
+  for (let i = 0; i < copiedPages.length; i += 1) {
+    const page = copiedPages[i];
+    const delta = rotationMap[i];
+    if (delta) {
+      const currentAngle = page.getRotation().angle;
+      page.setRotation(degrees((currentAngle + delta) % 360));
+    }
     outputDoc.addPage(page);
   }
 

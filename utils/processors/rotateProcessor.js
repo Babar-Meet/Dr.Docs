@@ -3,6 +3,7 @@ import fs from "fs-extra";
 import { PDFDocument, degrees } from "pdf-lib";
 import { AppError } from "../errors.js";
 import { SECURE_ENCRYPTION_MESSAGE } from "../constants.js";
+import { parsePageRotations } from "../helpers/pageRotations.js";
 
 function toReason(error) {
   return error?.message || "Unknown PDF processing error";
@@ -114,58 +115,9 @@ function parseRotatePages(pagesRaw, pageCount) {
 
 // Per-page rotations come as page:angle pairs like "1:90,3:270". Each entry is
 // a clockwise delta applied to that page only. Absent pages keep their
-// rotation. Returns null for an empty field so the caller falls back to the
-// original angle plus pages path.
-function parseRotations(rotationsRaw, pageCount) {
-  const raw = (rotationsRaw ?? "").trim();
-  if (!raw) return null;
-
-  const tokens = raw
-    .split(",")
-    .map((t) => t.trim())
-    .filter(Boolean);
-
-  if (tokens.length === 0) return null;
-
-  const byPage = new Map();
-  for (const token of tokens) {
-    if (!/^\d+:\d+$/.test(token)) {
-      throw new AppError("Unsupported file", "UNSUPPORTED_FILE", 400, {
-        reason: `Invalid rotation entry: ${token}. Use page:angle pairs like 1:90.`,
-      });
-    }
-    const separatorIndex = token.indexOf(":");
-    const pageRaw = token.slice(0, separatorIndex);
-    const angleRaw = token.slice(separatorIndex + 1);
-    const pageNumber = Number.parseInt(pageRaw, 10);
-    const angle = Number.parseInt(angleRaw, 10);
-
-    if (Number.isNaN(pageNumber) || pageNumber < 1 || pageNumber > pageCount) {
-      throw new AppError("Unsupported file", "UNSUPPORTED_FILE", 400, {
-        reason: `Invalid rotation entry: ${token}. Page ${pageRaw} is past the last page (${pageCount} pages).`,
-      });
-    }
-    if (Number.isNaN(angle) || ![90, 180, 270].includes(angle)) {
-      throw new AppError("Unsupported file", "UNSUPPORTED_FILE", 400, {
-        reason: `Invalid rotation entry: ${token}. Supported angles are 90, 180, 270.`,
-      });
-    }
-    if (byPage.has(pageNumber)) {
-      throw new AppError("Unsupported file", "UNSUPPORTED_FILE", 400, {
-        reason: `Invalid rotation entry: page ${pageNumber} is listed more than once.`,
-      });
-    }
-    byPage.set(pageNumber, angle);
-  }
-
-  if (byPage.size === 0) {
-    throw new AppError("Unsupported file", "UNSUPPORTED_FILE", 400, {
-      reason: `Invalid rotation entry: ${raw}`,
-    });
-  }
-  return byPage;
-}
-
+// rotation. The shared helper returns null for an empty field so the caller
+// falls back to the original angle plus pages path, and it refuses any
+// malformed entry instead of ignoring it.
 async function loadPdfFromPath(inputPath) {
   try {
     const pdfBuffer = await fs.readFile(inputPath);
@@ -207,7 +159,7 @@ export async function rotatePdfPages({
   const pdfPages = pdfDoc.getPages();
 
   if (hasRotations) {
-    const rotationMap = parseRotations(rotations, pageCount);
+    const rotationMap = parsePageRotations(rotations, pageCount);
     for (let index = 0; index < pdfPages.length; index += 1) {
       const pageNumber = index + 1;
       if (!rotationMap.has(pageNumber)) {

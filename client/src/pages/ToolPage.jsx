@@ -41,6 +41,7 @@ function ToolRuntime({ tool }) {
     "watermark",
     "pagenumbers",
     "organize",
+    "compress",
   ].includes(tool.operation);
   const hasResult = Boolean(state.resultDownloadUrl);
   // A fixed-target conversion (a named pair page) shows no options panel:

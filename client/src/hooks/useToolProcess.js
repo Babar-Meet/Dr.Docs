@@ -62,6 +62,8 @@ export default function useToolProcess(tool) {
   // OrganizeOptions edits it through lib/organizeOrder.js; an empty string
   // means nothing arranged yet, which the server refuses.
   const [organizeOrder, setOrganizeOrder] = useState("");
+  const [organizeRotations, setOrganizeRotations] = useState("");
+  const [compressionLevel, setCompressionLevel] = useState("lossless");
   const [isProcessing, setIsProcessing] = useState(false);
   const [status, setStatus] = useState(null);
   // Set on the first click of the post-run Download button. Downloads are
@@ -201,6 +203,8 @@ export default function useToolProcess(tool) {
     setRotateAllDelta(0);
     setPageRotations({});
     setOrganizeOrder("");
+    setOrganizeRotations("");
+    setCompressionLevel("lossless");
     setPassword("");
 
     // Thumbnails and page counts arrive asynchronously, one file at a time.
@@ -287,6 +291,8 @@ export default function useToolProcess(tool) {
     setStatus(null);
     setResultDownloaded(false);
     setOrganizeOrder("");
+    setOrganizeRotations("");
+    setCompressionLevel("lossless");
     setPassword("");
   }
 
@@ -314,6 +320,8 @@ export default function useToolProcess(tool) {
       pageNumberPosition,
       pageNumberMargin,
       organizeOrder,
+      organizeRotations,
+      compressionLevel,
     };
 
     const failureReason = validateToolState({
@@ -428,6 +436,10 @@ export default function useToolProcess(tool) {
     setPageNumberMargin,
     organizeOrder,
     setOrganizeOrder,
+    organizeRotations,
+    setOrganizeRotations,
+    compressionLevel,
+    setCompressionLevel,
     isProcessing,
     status,
     resultDownloaded,
@@ -447,6 +459,8 @@ export default function useToolProcess(tool) {
           watermarkText,
           rotateRunnable: isRotateRunnable(),
           organizeOrder,
+          organizeRotations,
+          compressionLevel,
         },
       }),
     onPickFiles,

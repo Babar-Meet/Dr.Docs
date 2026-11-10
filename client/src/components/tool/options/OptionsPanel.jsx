@@ -7,11 +7,13 @@ import UnlockOptions from "./UnlockOptions.jsx";
 import WatermarkOptions from "./WatermarkOptions.jsx";
 import PageNumbersOptions from "./PageNumbersOptions.jsx";
 import OrganizeOptions from "./OrganizeOptions.jsx";
+import CompressOptions from "./CompressOptions.jsx";
 
-// ToolRecord.kind is "info" for compress, ocr and repair; those tools
-// have no selectable options, so they render no panel here. Their per-engine
-// notes live in ToolPage's About section. Unlock renders a panel too: it is
-// the one tool where a password-locked PDF can be opened with its password.
+// Panel routing is by operation: every tool with selectable options renders
+// its own panel here, and ocr and repair have none, so they fall through to
+// null. Their per-engine notes live in ToolPage's About section. Unlock
+// renders a panel too: it is the one tool where a password-locked PDF can be
+// opened with its password.
 
 export default function OptionsPanel({
   kind,
@@ -124,8 +126,19 @@ export default function OptionsPanel({
       <OrganizeOptions
         organizeOrder={state.organizeOrder}
         setOrganizeOrder={state.setOrganizeOrder}
+        organizeRotations={state.organizeRotations}
+        setOrganizeRotations={state.setOrganizeRotations}
         file={files[0] || null}
         pdfPages={singlePdfPages}
+      />
+    );
+  }
+
+  if (resolvedKind === "compress") {
+    return (
+      <CompressOptions
+        compressionLevel={state.compressionLevel}
+        setCompressionLevel={state.setCompressionLevel}
       />
     );
   }
